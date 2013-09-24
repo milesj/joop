@@ -1,0 +1,28 @@
+{
+  "name": "joop",
+  "version": "0.0.0",
+  "description": "OOP based functionality for JavaScript and Node.js",
+  "keywords": [
+    "oop",
+    "class", "inheritance", "encapsulation", "visibility"
+  ],
+  "author": {
+    "name": "Miles Johnson",
+    "url": "http://milesj.me"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/milesj/joop"
+  },
+  "bugs": {
+    "url": "https://github.com/milesj/joop/issues"
+  },
+  "devDependencies": {
+    "grunt": "*",
+    "grunt-contrib-uglify": "*",
+    "grunt-contrib-jshint": "*",
+    "mocha": "*",
+    "chai": "*"
+  }
+}
