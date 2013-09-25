@@ -1,7 +1,7 @@
 /**
- * @copyright 2006-2013, Miles Johnson - http://milesj.me
- * @license   http://opensource.org/licenses/mit-license.php
- * @link      http://milesj.me/code/javascript/joop
+ * @copyright   2006-2013, Miles Johnson - http://milesj.me
+ * @license     http://opensource.org/licenses/mit-license.php
+ * @link        http://milesj.me/code/javascript/joop
  */
 
 /**
@@ -9,6 +9,8 @@
  */
 (function() {
   'use strict';
+
+  var _toString = Object.prototype.toString;
 
   /**
    * Determine whether to allow function overrides by checking private and protected visibility.
@@ -22,7 +24,12 @@
       isNewFunc = (typeof newValue === 'function');
 
     // Original member doesn't exist or is not a function
+    // Do not allow private functions
     if (!isOldFunc) {
+      if (isNewFunc) {
+        return !newValue.$private;
+      }
+
       return true;
     }
 
@@ -55,6 +62,30 @@
 
       return ret;
     };
+  }
+
+  /**
+   * Reset the properties of a class so that array and object references are broken.
+   *
+   * @param {Object} self
+   */
+  function resetMembers(self) {
+    var key, value;
+
+    for (key in self) {
+      value = self[key];
+
+      if (typeof value !== 'object' || key === '$parent') {
+        continue;
+      }
+
+      if (_toString.call(value) === '[object Array]') {
+        self[key] = [].concat(value);
+
+      } else {
+        self[key] = {};
+      }
+    }
   }
 
   /** Reference the Function prototype */
@@ -210,7 +241,8 @@
     /*jshint newcap:false */
 
     initializing = true;
-    var parent = new this();
+    var parent = new this(),
+        proto = new this();
     initializing = false;
 
     if (parent.$namespace) {
@@ -219,13 +251,18 @@
 
     // Skeleton class to handle construct and init
     function Class() {
+      resetMembers(this);
+
       if (this.init && !initializing) {
         this.init.apply(this, arguments);
       }
     }
 
     // Inherit parent members
-    Class.implement(parent);
+    Class.prototype = proto;
+
+    // Reset the constructor
+    Class.prototype.constructor = Class;
 
     // Apply new members
     var origin, key, value;
@@ -240,7 +277,7 @@
 
       // Wrap methods to allow for parent() calls
       if (origin && (typeof origin === 'function' && typeof value === 'function')) {
-        if (origin.$protected || value.$private) {
+        if (origin.$protected) {
           continue;
         }
 
@@ -263,5 +300,9 @@
   });
 
   // Make available
-  this.Class = Class;
-})();
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = Class;
+  } else {
+    this.Class = Class;
+  }
+}).call(this);

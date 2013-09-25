@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <script type="text/javascript" src="../src/class.js"></script>
+    <script type="text/javascript">
+        var Animal = Class.create('Animal', {
+            name: '',
+            attributes: {},
+            traits: ['Mammal'],
+            init: function(name) {
+                this.name = name || '';
+            },
+            eat: function() {
+                return this.$namespace + ':eat';
+            },
+            sleep: function() {
+                return this.$namespace + ':sleep';
+            },
+            growl: function() {
+                return 'growl';
+            }
+        });
+
+        var Cat = Animal.create('Cat', {
+            type: '',
+            init: function(name, type) {
+                this.parent(name);
+                this.type = type || '';
+            },
+            growl: function() {
+                return 'meow';
+            }
+        });
+
+        var Lion = Cat.create('Lion', {
+            growl: function() {
+                return 'roar';
+            }
+        });
+
+        console.log(new Lion('Simba', 'male'));
+    </script>
+</head>
+<body>
+
+</body>
+</html>

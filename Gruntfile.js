@@ -2,9 +2,9 @@ module.exports = function(grunt) {
 
   function createBanner() {
     return '/**\n' +
-      ' * @copyright 2006-2013, Miles Johnson - http://milesj.me\n' +
-      ' * @license   http://opensource.org/licenses/mit-license.php\n' +
-      ' * @link      http://milesj.me/code/javascript/joop\n' +
+      ' * @copyright   2006-2013, Miles Johnson - http://milesj.me\n' +
+      ' * @license     http://opensource.org/licenses/mit-license.php\n' +
+      ' * @link        http://milesj.me/code/javascript/joop\n' +
       ' */\n';
   }
 
@@ -14,7 +14,8 @@ module.exports = function(grunt) {
     jshint: {
       options: {
         globals: {
-          console: true
+          console: true,
+          module: true
         },
         browser: true,
         // enforcing
@@ -52,5 +53,6 @@ module.exports = function(grunt) {
 
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-jshint');
+
   grunt.registerTask('default', ['jshint', 'uglify']);
 };
