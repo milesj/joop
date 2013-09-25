@@ -5,7 +5,8 @@
  */
 
 /**
- * Thanks to the MooTools team, John Resig, and the many other class inheritance systems for the idea.
+ * Thanks to the MooTools team, John Resig,
+ * and the many other class inheritance systems for the idea.
  */
 (function() {
   'use strict';
@@ -75,7 +76,7 @@
     for (key in self) {
       value = self[key];
 
-      if (typeof value !== 'object' || key === '$parent') {
+      if (typeof value !== 'object') {
         continue;
       }
 
@@ -105,7 +106,7 @@
 
   /**
    * Mark a function as private.
-   * Private methods will not be inherited by children in classes.
+   * Private methods will not be inherited by classes.
    *
    * @returns {Function}
    */
@@ -113,6 +114,76 @@
     this.$private = true;
 
     return this;
+  };
+
+  /**
+   * Provides a way to type hint function arguments.
+   * Any argument that does not match the type will throw an error.
+   * Use of nulls can be used for skipping arguments or accepting no value.
+   * Also accepts classes and namespaces.
+   *
+   * @param {Array} types
+   * @returns {Function}
+   */
+  Func.hint = function(types) {
+    var self = this;
+
+    return function hint() {
+      /*jshint newcap:false */
+
+      var arg, argType, type, error, errorType;
+
+      for (var i = 0, l = types.length; i < l; i++) {
+        arg = arguments[i];
+        type = types[i];
+        error = false;
+
+        if (typeof arg === 'undefined' || type === null || arg === null) {
+          continue;
+        }
+
+        argType = (typeof arg);
+        errorType = type;
+
+        switch (type) {
+          case 'arr':
+          case 'array':     error = (_toString.call(arg) !== '[object Array]'); break;
+          case 'obj':
+          case 'object':    error = (argType !== 'object'); break;
+          case 'str':
+          case 'string':    error = (argType !== 'string'); break;
+          case 'int':
+          case 'integer':
+          case 'num':
+          case 'number':    error = (argType !== 'number'); break;
+          case 'bool':
+          case 'boolean':   error = (argType !== 'boolean'); break;
+          case 'fn':
+          case 'func':
+          case 'function':  error = (argType !== 'function'); break;
+          case 'regex':
+          case 'regexp':    error = (_toString.call(arg) !== '[object RegExp]'); break;
+          default:
+            // Allows type hints for "Class.Name.Space"
+            if (typeof type === 'string') {
+              error = (arg.$namespace !== type);
+
+            // Allows direct linking to class interface object
+            } else {
+              error = !type.prototype.isPrototypeOf(arg);
+              errorType = new type().$namespace;
+            }
+          break;
+        }
+
+        // Throw an error
+        if (error) {
+          throw new Error('Argument ' + i + ' must be of type ' + errorType);
+        }
+      }
+
+      return self.apply(this, arguments);
+    }.extend('$hints', types);
   };
 
   /**
@@ -241,8 +312,7 @@
     /*jshint newcap:false */
 
     initializing = true;
-    var parent = new this(),
-        proto = new this();
+    var parent = new this();
     initializing = false;
 
     if (parent.$namespace) {
@@ -259,7 +329,7 @@
     }
 
     // Inherit parent members
-    Class.prototype = proto;
+    Class.prototype = parent;
 
     // Reset the constructor
     Class.prototype.constructor = Class;
@@ -289,8 +359,7 @@
 
     // Reference origins
     Class.implement({
-      $namespace: namespace,
-      $parent: parent
+      $namespace: namespace
     });
 
     // Reference static create method
@@ -302,7 +371,9 @@
   // Make available
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = Class;
+
   } else {
     this.Class = Class;
   }
+
 }).call(this);
