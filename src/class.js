@@ -164,14 +164,14 @@
           case 'regex':
           case 'regexp':    error = (_toString.call(arg) !== '[object RegExp]'); break;
           default:
-            // Allows type hints for "Class.Name.Space"
+            // Allows type hints for "Name.Space.Class"
             if (typeof type === 'string') {
-              error = (arg.$namespace !== type);
+              error = (arg.className() !== type);
 
             // Allows direct linking to class interface object
             } else {
               error = !type.prototype.isPrototypeOf(arg);
-              errorType = new type().$namespace;
+              errorType = new type().className();
             }
           break;
         }
@@ -302,22 +302,27 @@
   }.protect());
 
   /**
+   * Return the fully qualified class name that includes the namespace.
+   *
+   * @returns {String}
+   */
+  Class.implement('className', function() {
+    return (this.$namespace ? this.$namespace + '.' : '') + this.$class;
+  }.protect());
+
+  /**
    * Implements the static create() method which allows for creating child classes from the current class.
    *
    * @param {String} namespace
    * @param {Object} props
    * @returns {Class}
    */
-  Class.extend('create', function create(namespace, props) {
+  Class.extend('create', function create(name, props) {
     /*jshint newcap:false */
 
     initializing = true;
     var parent = new this();
     initializing = false;
-
-    if (parent.$namespace) {
-      namespace = parent.$namespace + '.' + namespace;
-    }
 
     // Skeleton class to handle construct and init
     function Class() {
@@ -358,8 +363,19 @@
     }
 
     // Reference origins
+    var namespace = [];
+
+    if (parent.$namespace) {
+      namespace.push(parent.$namespace);
+    }
+
+    if (parent.$class) {
+      namespace.push(parent.$class);
+    }
+
     Class.implement({
-      $namespace: namespace
+      $namespace: namespace.join('.'),
+      $class: name
     });
 
     // Reference static create method

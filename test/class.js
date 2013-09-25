@@ -23,10 +23,10 @@ var Animal = Class.create('Animal', {
     this.name = name || '';
   },
   eat: function() {
-    return this.$namespace + ':eat';
+    return this.className() + ':eat';
   },
   sleep: function() {
-    return this.$namespace + ':sleep';
+    return this.className() + ':sleep';
   }.protect(),
   growl: function() {
     return 'growl';
@@ -68,10 +68,16 @@ var Lion = Cat.create('Lion', {
 
 describe('Class', function() {
 
+  it('class name is defined', function() {
+    expect(new Animal().$class).to.equal('Animal');
+    expect(new Cat().$class).to.equal('Cat');
+    expect(new Lion().$class).to.equal('Lion');
+  });
+
   it('namespace is inherited through the chain', function() {
-    expect(new Animal().$namespace).to.equal('Animal');
-    expect(new Cat().$namespace).to.equal('Animal.Cat');
-    expect(new Lion().$namespace).to.equal('Animal.Cat.Lion');
+    expect(new Animal().$namespace).to.equal('');
+    expect(new Cat().$namespace).to.equal('Animal');
+    expect(new Lion().$namespace).to.equal('Animal.Cat');
   });
 
   it('instanceof comparison checks should work', function() {
