@@ -97,7 +97,7 @@
    *
    * @returns {Function}
    */
-  Func.protected = function() {
+  Func.protect = function() {
     this.$protected = true;
 
     return this;
@@ -150,7 +150,7 @@
       }
 
       return self.apply(this, arguments);
-    };
+    }.extend('$deprecated', message);
   };
 
   /**
@@ -228,7 +228,7 @@
     }
 
     return this.$super.apply(this, arguments);
-  }.protected());
+  }.protect());
 
   /**
    * Implements the static create() method which allows for creating child classes from the current class.

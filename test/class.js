@@ -25,7 +25,7 @@
     },
     sleep: function() {
       return this.$namespace + ':sleep';
-    }.protected(),
+    }.protect(),
     growl: function() {
       return 'growl';
     },
@@ -161,6 +161,69 @@
   });
 
   describe('Function', function() {
+
+    it('memoize() should cache the result and return it', function() {
+      var cache = function() {
+        return Math.random();
+      }.memoize();
+
+      var result = cache();
+
+      expect(cache()).to.equal(result);
+      expect(cache()).to.equal(result);
+      expect(cache()).to.equal(result);
+    });
+
+    it('overload() should allow functions to accept objects', function() {
+      var data = {},
+        setter = function(key, value) {
+          data[key] = value;
+        }.overload();
+
+      setter('foo', 'bar');
+
+      expect(data).to.deep.equal({
+        foo: 'bar'
+      });
+
+      setter({
+        foo: 'baz',
+        wtf: 123456
+      });
+
+      expect(data).to.deep.equal({
+        foo: 'baz',
+        wtf: 123456
+      });
+    });
+
+    it('extend() should apply static members', function() {
+      var obj = function() {};
+          obj.extend('foo', 'bar');
+
+      expect(obj.foo).to.equal('bar');
+      expect(obj.prototype.foo).to.be.an('undefined');
+      expect(obj.bar).to.be.an('undefined');
+    });
+
+    it('implement() should apply dynamic members (to prototype)', function() {
+      var obj = function() {};
+          obj.implement('foo', 'bar');
+
+      expect(obj.prototype.foo).to.equal('bar');
+      expect(obj.foo).to.be.an('undefined');
+      expect(obj.prototype.bar).to.be.an('undefined');
+    });
+
+    it('deprecate() should log warnings', function() {
+      var func = function() {};
+
+      expect(func.$deprecated).to.be.an('undefined');
+
+      func = func.deprecate('Oops!');
+
+      expect(func.$deprecated).to.equal('Oops!');
+    });
 
   });
 
