@@ -4,33 +4,8 @@
  * @link        http://milesj.me/code/javascript/joop
  */
 
-/**
- * Thanks to the MooTools team, John Resig,
- * and the many other class inheritance systems for the idea.
- */
 (function() {
   'use strict';
-
-  var _toString = Object.prototype.toString;
-
-  /**
-   * Copy the properties of multiple objects into a new clean object.
-   * Allows for merging and reference breaking.
-   *
-   * @param {Object} objects,...
-   * @returns {Object}
-   */
-  function mergeObject() {
-    var obj = {};
-
-    Array.prototype.slice.call(arguments).forEach(function(arg) {
-      for (var key in arg) {
-        obj[key] = arg[key];
-      }
-    });
-
-    return obj;
-  }
 
   /**
    * Determine whether to allow function overrides by checking private and protected visibility.
@@ -90,73 +65,72 @@
    * @param {Object} object
    */
   function resetMembers(object) {
-    var key, value;
+    var key, value, type;
 
     for (key in object) {
       value = object[key];
+      type = typeOf(value);
 
-      if (typeof value !== 'object') {
-        continue;
-      }
-
-      if (_toString.call(value) === '[object Array]') {
-        object[key] = [].concat(value);
-
-      } else {
-        object[key] = mergeObject(value);
+      if (type === 'array') {
+        object[key] = Array.clone(value);
+      } else if (type === 'object') {
+        object[key] = Object.clone(value);
       }
     }
   }
 
   /**
-   * Inherit members (props and methods) from one object into another.
+   * Inherit static members from one object into another.
+   *
+   * @param {Object} object
+   * @param {Object} props
+   */
+  function extendMembers(object, props) {
+    for (var key in props) {
+      if (!props.hasOwnProperty(key)) {
+        continue;
+      }
+
+      object.extend(key, props[key]);
+    }
+  }
+
+  /**
+   * Inherit dynamic members from one object into another.
    * Take into account visibility modifiers.
    *
    * @param {Object} object
    * @param {Object} props
-   * @param {boolean} proto
    */
-  function inheritMembers(object, props, proto) {
-    var origin, key, value;
+  function implementMembers(object, props) {
+    var origin, key, value, isStatic, type;
 
     for (key in props) {
       if (!props.hasOwnProperty(key)) {
         continue;
       }
 
-      origin = proto ? object.prototype[key] : object[key];
       value = props[key];
+      type = typeOf(value);
+      isStatic = (type === 'function' && value.$static);
+      origin = isStatic ? object[key] : object.prototype[key];
 
-      if (origin) {
-
-        // Wrap methods to allow for parent() calls
-        if (typeof origin === 'function' && typeof value === 'function') {
-          if (origin.$protected) {
-            continue;
-          }
-
-          // Do not wrap static methods
-          if (!value.$static) {
-            value = wrapMethod(key, origin, value);
-          }
-
-        // Merge values
-        } else if (typeof origin === 'object') {
-          switch (_toString.call(origin)) {
-            case '[object Array]':
-              value = origin.concat(value);
-            break;
-            case '[object Object]':
-              value = mergeObject({}, origin, value);
-            break;
-          }
+      // Wrap methods to allow for parent() calls
+      if (origin && !isStatic && (typeof origin === 'function' && type === 'function')) {
+        if (origin.$protected) {
+          continue;
         }
+
+        value = wrapMethod(key, origin, value);
       }
 
-      if (proto) {
-        object.implement(key, value);
-      } else {
-        object.extend(key, value);
+      // Extend the object if visibility allows it
+      if (visibilityCheck(origin, value)) {
+        if (isStatic) {
+          object.extend(key, value);
+        } else {
+          object.implement(key, value);
+        }
       }
     }
   }
@@ -170,7 +144,7 @@
    *
    * @returns {Function}
    */
-  Func.static = function() {
+  Func.static = function isStatic() {
     this.$static = true;
 
     return this;
@@ -182,7 +156,7 @@
    *
    * @returns {Function}
    */
-  Func.protect = function() {
+  Func.protect = function isProtected() {
     this.$protected = true;
 
     return this;
@@ -194,7 +168,7 @@
    *
    * @returns {Function}
    */
-  Func.private = function() {
+  Func.private = function isPrivate() {
     this.$private = true;
 
     return this;
@@ -209,7 +183,7 @@
    * @param {Array} types
    * @returns {Function}
    */
-  Func.hint = function(types) {
+  Func.hint = function typeHint(types) {
     var self = this;
 
     return function hint() {
@@ -221,17 +195,16 @@
         arg = arguments[i];
         type = types[i];
         error = false;
+        argType = typeOf(arg);
+        errorType = type;
 
-        if (typeof arg === 'undefined' || type === null || arg === null) {
+        if (argType === 'null' || type === null || arg === null) {
           continue;
         }
 
-        argType = (typeof arg);
-        errorType = type;
-
         switch (type) {
           case 'arr':
-          case 'array':     error = (_toString.call(arg) !== '[object Array]'); break;
+          case 'array':     error = (argType !== 'array'); break;
           case 'obj':
           case 'object':    error = (argType !== 'object'); break;
           case 'str':
@@ -246,7 +219,7 @@
           case 'func':
           case 'function':  error = (argType !== 'function'); break;
           case 'regex':
-          case 'regexp':    error = (_toString.call(arg) !== '[object RegExp]'); break;
+          case 'regexp':    error = (argType !== 'regexp'); break;
           default:
             // Allows type hints for "Name.Space.Class"
             if (typeof type === 'string') {
@@ -276,7 +249,7 @@
    *
    * @returns {Function}
    */
-  Func.memoize = function() {
+  Func.memoize = function memoizer() {
     var self = this, cache = null;
 
     return function memoize() {
@@ -295,11 +268,11 @@
    * @param {String} message
    * @returns {Function}
    */
-  Func.deprecate = function(message) {
+  Func.deprecate = function deprecater(message) {
     var self = this, warned = false;
 
     return function deprecate() {
-      if (!warned && console) {
+      if (!warned && isDefined(console)) {
         console.warn('This method is deprecated. ' + message + '\n' + new Error(message).stack);
         warned = true;
       }
@@ -307,68 +280,6 @@
       return self.apply(this, arguments);
     }.extend('$deprecated', message);
   };
-
-  /**
-   * Overload a method with key value arguments to accept an object of key values.
-   *
-   * @param {boolean} [check]  Verify has own property
-   * @returns {Function}
-   */
-  Func.overload = function(check) {
-    var self = this;
-
-    return function overload(a, b) {
-      if (typeof a === 'object') {
-        for (var key in a) {
-          if (check && !a.hasOwnProperty(key)) {
-            continue;
-          }
-
-          self.call(this, key, a[key]);
-        }
-      } else if (a) {
-        self.call(this, a, b);
-      }
-
-      return this;
-    };
-  };
-
-  /**
-   * Extend the object with new members. These members can be accessed statically.
-   * Apply visibility checks to functions.
-   *
-   * @param {String} key
-   * @param {*} value
-   * @returns {Function}
-   */
-  Func.extend = function(key, value) {
-    if (visibilityCheck(this[key], value)) {
-      this[key] = value;
-    }
-
-    return this;
-  }.overload();
-
-  /**
-   * Extend the object's prototype with new members. These members can be accessed dynamically.
-   * Apply visibility checks to functions.
-   *
-   * @param {String} key
-   * @param {*} value
-   * @returns {Function}
-   */
-  Func.implement = function(key, value) {
-    if (typeof value === 'function' && value.$static) {
-      return this.extend(key, value);
-    }
-
-    if (visibilityCheck(this.prototype[key], value)) {
-      this.prototype[key] = value;
-    }
-
-    return this;
-  }.overload();
 
   /** Flag for class initialization checks */
   var initializing = false;
@@ -428,8 +339,8 @@
     Class.prototype.constructor = Class;
 
     // Apply new members
-    inheritMembers(Class, this); // static
-    inheritMembers(Class, props, true); // dynamic
+    extendMembers(Class, this); // static
+    implementMembers(Class, props); // dynamic
 
     // Reference origins
     var namespace = [];
