@@ -166,7 +166,7 @@ describe('Class', function() {
     a.attributes.nocturnal = false;
 
     expect(a.attributes.nocturnal).to.be.false;
-    expect(b.attributes.nocturnal).to.be.an('undefined');
+    expect(b.attributes.nocturnal).to.be.true;
   });
 
   it('static methods should be inherited', function() {
@@ -179,6 +179,23 @@ describe('Class', function() {
     expect(Dog.factory()).to.be.instanceof(Dog);
   });
 
+  it('inherited arrays should merge together', function() {
+    var Foo = Class.create('Foo', {
+      array: ['foo'],
+      obj: { foo: true }
+    });
+
+    var Bar = Foo.create('Bar', {
+      array: ['bar'],
+      obj: { bar: true }
+    });
+
+    expect(new Bar().array).to.deep.equal(['foo', 'bar']);
+    expect(new Bar().obj).to.deep.equal({
+      foo: true,
+      bar: true
+    });
+  });
 });
 
 describe('Function', function() {

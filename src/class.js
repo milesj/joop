@@ -14,6 +14,25 @@
   var _toString = Object.prototype.toString;
 
   /**
+   * Copy the properties of multiple objects into a new clean object.
+   * Allows for merging and reference breaking.
+   *
+   * @param {Object} objects,...
+   * @returns {Object}
+   */
+  function mergeObject() {
+    var obj = {};
+
+    Array.prototype.slice.call(arguments).forEach(function(arg) {
+      for (var key in arg) {
+        obj[key] = arg[key];
+      }
+    });
+
+    return obj;
+  }
+
+  /**
    * Determine whether to allow function overrides by checking private and protected visibility.
    *
    * @param {Function} oldValue
@@ -84,7 +103,7 @@
         object[key] = [].concat(value);
 
       } else {
-        object[key] = {}; // TODO, clone or merge?
+        object[key] = mergeObject(value);
       }
     }
   }
@@ -108,15 +127,29 @@
       origin = proto ? object.prototype[key] : object[key];
       value = props[key];
 
-      // Wrap methods to allow for parent() calls
-      if (origin && (typeof origin === 'function' && typeof value === 'function')) {
-        if (origin.$protected) {
-          continue;
-        }
+      if (origin) {
 
-        // Do not wrap static methods
-        if (!value.$static) {
-          value = wrapMethod(key, origin, value);
+        // Wrap methods to allow for parent() calls
+        if (typeof origin === 'function' && typeof value === 'function') {
+          if (origin.$protected) {
+            continue;
+          }
+
+          // Do not wrap static methods
+          if (!value.$static) {
+            value = wrapMethod(key, origin, value);
+          }
+
+        // Merge values
+        } else if (typeof origin === 'object') {
+          switch (_toString.call(origin)) {
+            case '[object Array]':
+              value = origin.concat(value);
+            break;
+            case '[object Object]':
+              value = mergeObject({}, origin, value);
+            break;
+          }
         }
       }
 
@@ -361,7 +394,7 @@
    *
    * @returns {String}
    */
-  Class.implement('className', function() {
+  Class.implement('className', function className() {
     return (this.$namespace ? this.$namespace + '.' : '') + this.$class;
   }.protect());
 
