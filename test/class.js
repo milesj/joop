@@ -33,10 +33,17 @@ var Animal = Class.create('Animal', {
   },
   die: function() {
     return 'oops';
-  }.private()
+  }.private(),
+  factory: function() {
+    return new Animal();
+  }.static()
 });
 
-var Dog = Animal.create('Dog');
+var Dog = Animal.create('Dog', {
+  factory: function() {
+    return new Dog();
+  }.static()
+});
 
 var Cat = Animal.create('Cat', {
   type: '',
@@ -162,6 +169,16 @@ describe('Class', function() {
     expect(b.attributes.nocturnal).to.be.an('undefined');
   });
 
+  it('static methods should be inherited', function() {
+    expect(Animal.factory()).to.be.instanceof(Animal);
+    expect(Cat.factory()).to.be.instanceof(Animal);
+  });
+
+  it('static methods should be overwritable', function() {
+    expect(Dog.factory()).to.be.instanceof(Animal);
+    expect(Dog.factory()).to.be.instanceof(Dog);
+  });
+
 });
 
 describe('Function', function() {
@@ -275,6 +292,14 @@ describe('Function', function() {
       // allow nulls to be used
       func('bar', null, false, 'uncheckedValue', 'notArray');
     }).to.throw(Error);
+  });
+
+  it('static() should be available statically', function() {
+    var a = new Animal();
+
+    expect(Animal.factory).to.be.an('function');
+    expect(Animal.prototype.factory).to.be.an('undefined');
+    expect(a.factory).to.be.an('undefined');
   });
 
 });

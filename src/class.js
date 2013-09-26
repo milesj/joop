@@ -66,31 +66,82 @@
   }
 
   /**
-   * Reset the properties of a class so that array and object references are broken.
+   * Reset the members of a class so that array and object references are broken.
    *
-   * @param {Object} self
+   * @param {Object} object
    */
-  function resetMembers(self) {
+  function resetMembers(object) {
     var key, value;
 
-    for (key in self) {
-      value = self[key];
+    for (key in object) {
+      value = object[key];
 
       if (typeof value !== 'object') {
         continue;
       }
 
       if (_toString.call(value) === '[object Array]') {
-        self[key] = [].concat(value);
+        object[key] = [].concat(value);
 
       } else {
-        self[key] = {};
+        object[key] = {}; // TODO, clone or merge?
+      }
+    }
+  }
+
+  /**
+   * Inherit members (props and methods) from one object into another.
+   * Take into account visibility modifiers.
+   *
+   * @param {Object} object
+   * @param {Object} props
+   * @param {boolean} proto
+   */
+  function inheritMembers(object, props, proto) {
+    var origin, key, value;
+
+    for (key in props) {
+      if (!props.hasOwnProperty(key)) {
+        continue;
+      }
+
+      origin = proto ? object.prototype[key] : object[key];
+      value = props[key];
+
+      // Wrap methods to allow for parent() calls
+      if (origin && (typeof origin === 'function' && typeof value === 'function')) {
+        if (origin.$protected) {
+          continue;
+        }
+
+        // Do not wrap static methods
+        if (!value.$static) {
+          value = wrapMethod(key, origin, value);
+        }
+      }
+
+      if (proto) {
+        object.implement(key, value);
+      } else {
+        object.extend(key, value);
       }
     }
   }
 
   /** Reference the Function prototype */
   var Func = Function.prototype;
+
+  /**
+   * Mark a function as static.
+   * Static methods can be called without an instance.
+   *
+   * @returns {Function}
+   */
+  Func.static = function() {
+    this.$static = true;
+
+    return this;
+  };
 
   /**
    * Mark a function as protected.
@@ -275,6 +326,10 @@
    * @returns {Function}
    */
   Func.implement = function(key, value) {
+    if (typeof value === 'function' && value.$static) {
+      return this.extend(key, value);
+    }
+
     if (visibilityCheck(this.prototype[key], value)) {
       this.prototype[key] = value;
     }
@@ -340,27 +395,8 @@
     Class.prototype.constructor = Class;
 
     // Apply new members
-    var origin, key, value;
-
-    for (key in props) {
-      if (!props.hasOwnProperty(key)) {
-        continue;
-      }
-
-      origin = Class.prototype[key];
-      value = props[key];
-
-      // Wrap methods to allow for parent() calls
-      if (origin && (typeof origin === 'function' && typeof value === 'function')) {
-        if (origin.$protected) {
-          continue;
-        }
-
-        value = wrapMethod(key, origin, value);
-      }
-
-      Class.implement(key, value);
-    }
+    inheritMembers(Class, this); // static
+    inheritMembers(Class, props, true); // dynamic
 
     // Reference origins
     var namespace = [];
@@ -377,9 +413,6 @@
       $namespace: namespace.join('.'),
       $class: name
     });
-
-    // Reference static create method
-    Class.create = this.create;
 
     return Class;
   });
