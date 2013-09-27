@@ -7,6 +7,8 @@
 (function() {
   'use strict';
 
+  var _toString = Object.prototype.toString;
+
   /**
    * Determine the item type and return it as a string.
    *
@@ -37,7 +39,7 @@
     }
 
     if (type === 'object') {
-      return Object.prototype.toString.call(item).replace(/\[object ([a-zA-Z]+)\]/, function(a, b) {
+      return _toString.call(item).replace(/\[object ([a-zA-Z]+)\]/, function(a, b) {
         return b.toLowerCase();
       });
 
@@ -67,6 +69,12 @@
     return (item instanceof object);
   }
 
+  /**
+   * Check if a variable is defined.
+   *
+   * @param {*} item
+   * @returns {boolean}
+   */
   function isDefined(item) {
     return (typeof item !== 'undefined');
   }
@@ -80,6 +88,29 @@
   var Func = Function.prototype;
 
   /**
+   * Overload a getter method to accept an array that returns a set of data.
+   *
+   * @returns {Function}
+   */
+  Func.getter = function getter() {
+    var self = this;
+
+    return function overloadGetter(a) {
+      var data = [];
+
+      if (typeOf(a) === 'array') {
+        for (var i = 0, l = a.length; i < l; i++) {
+          data[a[i]] = self.call(this, a[i]);
+        }
+      } else {
+        data = self.call(this, a);
+      }
+
+      return data;
+    }
+  };
+
+  /**
    * Overload a setter method with key value arguments to accept an object of key values.
    *
    * @param {boolean} [check]  Verify has own property
@@ -89,7 +120,7 @@
     var self = this;
 
     return function overloadSetter(a, b) {
-      if (typeof a === 'object') {
+      if (typeOf(a) === 'object') {
         for (var key in a) {
           if (check && !a.hasOwnProperty(key)) {
             continue;
@@ -111,14 +142,9 @@
    *
    * @param {String} key
    * @param {*} value
-   * @param {boolean} dontOverwrite
    * @returns {Function}
    */
-  Func.extend = function extend(key, value, dontOverwrite) {
-    if (dontOverwrite && this[key]) {
-      return this;
-    }
-
+  Func.extend = function extend(key, value) {
     this[key] = value;
 
     return this;
@@ -130,14 +156,9 @@
    *
    * @param {String} key
    * @param {*} value
-   * @param {boolean} dontOverwrite
    * @returns {Function}
    */
-  Func.implement = function implement(key, value, dontOverwrite) {
-    if (dontOverwrite && this.prototype[key]) {
-      return this;
-    }
-
+  Func.implement = function implement(key, value) {
     this.prototype[key] = value;
 
     return this;

@@ -135,6 +135,8 @@
     }
   }
 
+  /*------------------------------------ Methods ------------------------------------*/
+
   /** Reference the Function prototype */
   var Func = Function.prototype;
 
@@ -281,33 +283,39 @@
     }.extend('$deprecated', message);
   };
 
+  /*------------------------------------ Classes ------------------------------------*/
+
   /** Flag for class initialization checks */
   var initializing = false;
 
   /** Base class object that all classes should extend */
   var Class = function() {};
 
-  /**
-   * Implements the parent() method allowing for child to parent method calls.
-   *
-   * @returns {*}
-   */
-  Class.implement('parent', function parent() {
-    if (!this.$caller || !this.$super) {
-      throw new Error('The method parent() cannot be called in this context');
-    }
+  Class.implement({
 
-    return this.$super.apply(this, arguments);
-  }.protect());
+    /**
+     * Implements the parent() method allowing for child to parent method calls.
+     *
+     * @returns {*}
+     */
+    parent: function parent() {
+      if (!this.$caller || !this.$super) {
+        throw new Error('The method parent() cannot be called in this context');
+      }
 
-  /**
-   * Return the fully qualified class name that includes the namespace.
-   *
-   * @returns {String}
-   */
-  Class.implement('className', function className() {
-    return (this.$namespace ? this.$namespace + '.' : '') + this.$class;
-  }.protect());
+      return this.$super.apply(this, arguments);
+    }.protect(),
+
+    /**
+     * Return the fully qualified class name that includes the namespace.
+     *
+     * @returns {String}
+     */
+    className: function className() {
+      return (this.$namespace ? this.$namespace + '.' : '') + this.$class;
+    }.protect()
+
+  });
 
   /**
    * Implements the static create() method which allows for creating child classes from the current class.
@@ -361,12 +369,5 @@
     return Class;
   });
 
-  // Make available
-  if (typeof module !== 'undefined' && module.exports) {
-    module.exports = Class;
-
-  } else {
-    this.Class = Class;
-  }
-
+  this.Class = Class;
 }).call(this);
