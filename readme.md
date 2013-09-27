@@ -9,3 +9,5 @@ OOP based functionality for JavaScript and Node.js. This is merely a fun prototy
 Since extending the DOM is frowned upon because of legacy issues, this project will only support the most modern of browsers... and again, it's for fun.
 
 [Joop is loosely based on this wonderful article.](http://perfectionkills.com/whats-wrong-with-extending-the-dom)
+
+This project is basically the bastard love child of jQuery, MooTools and Prototype.

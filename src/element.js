@@ -7,35 +7,75 @@
 (function() {
   'use strict';
 
-  function doGetOrSet(element, key, value, getter, setter) {
+  function doGetOrSet(self, key, value, getter, setter, remover) {
     var keyType = typeOf(key),
         valueType = typeOf(value);
 
+    // remove('key')
+    if (remover && value === null && keyType === 'string') {
+      return remover.call(self, key);
+    }
+
     // set('key', 'value')
     // set({ key: 'value' })
-    if (valueType !== 'null' || keyType === 'object') {
-      return setter.call(element, key, value);
+    if (setter && (valueType !== 'null' || keyType === 'object')) {
+      return setter.call(self, key, value);
     }
 
     // get('key')
     // get(['key1', 'key2'])
-    return getter.call(element, key);
-  }
+    if (getter && valueType === 'null') {
+      return getter.call(self, key);
+    }
 
-  function resolveValue(element, value) {
-    return (typeOf(value) === 'function') ? value.call(element) : value;
+    return self;
   }
 
   function getComputedStyle(element) {
     return window.getComputedStyle(element, null);
   }
 
-  /*------------------------------------ Attributes ------------------------------------*/
+  function getSumOfStyles(element, keys) {
+    var style = getComputedStyle(element),
+      value = 0;
+
+    for (var i = 0, l = keys.length; i < l; i++) {
+      value += style[keys[i]];
+    }
+
+    return value;
+  }
+
+  /*------------------------------------ Hooks ------------------------------------*/
+
+  function setBoolHook(key, value) {
+    return (typeOf(value) !== 'boolean') ? (key === value) : value;
+  }
+
+  var booleans = 'checked|selected|async|autofocus|autoplay|controls|defer|disabled|hidden|ismap|loop|multiple|open|readonly|required|scoped';
+
+  var Hooks = {
+    prop: {
+      tag: {
+        get: function getTagProp(key) {
+          return (this.tagName || this.nodeName).toLowerCase();
+        }
+      }
+    }
+  };
+
+  booleans.split('|').forEach(function(bool) {
+    Hooks.prop[bool] = { set: setBoolHook };
+  });
+
+  /*------------------------------------ Element ------------------------------------*/
 
   Element.implement({
 
+    /*------------------------------------ Attributes ------------------------------------*/
+
     attr: function attr(key, value) {
-      return doGetOrSet(this, key, value, this.getAttr, this.setAttr);
+      return doGetOrSet(this, key, value, this.getAttr, this.setAttr, this.removeAttr);
     },
 
     getAttr: function getAttr(key) {
@@ -43,7 +83,11 @@
     }.getter(),
 
     setAttr: function setAttr(key, value) {
-      this.setAttribute(key, resolveValue(value));
+      if (typeOf(value) === 'function') {
+        value = value.call(this, this.getAttr(key)); // current attribute as argument
+      }
+
+      this.setAttribute(key, value);
 
       return this;
     }.setter(),
@@ -52,24 +96,39 @@
       this.removeAttribute(key);
 
       return this;
-    }
+    }.remover(),
 
-  });
-
-  /*------------------------------------ Properties ------------------------------------*/
-
-  Element.implement({
+    /*------------------------------------ Properties ------------------------------------*/
 
     prop: function prop(key, value) {
-      return doGetOrSet(this, key, value, this.getProp, this.setProp);
+      return doGetOrSet(this, key, value, this.getProp, this.setProp, this.removeProp);
     },
 
     getProp: function getProp(key) {
-      return this[key] || null;
+      if (Hooks.prop[key] && Hooks.prop[key].get) {
+        return Hooks.prop[key].get.call(this, key);
+      }
+
+      // Props can be false so check for it
+      if (typeof this[key] === 'undefined') {
+        return null;
+      }
+
+      return this[key];
     }.getter(),
 
     setProp: function setProp(key, value) {
-      return this[key] = resolveValue(value);
+      if (typeOf(value) === 'function') {
+        value = value.call(this, this.getProp(key)); // current prop as argument
+      }
+
+      if (Hooks.prop[key] && Hooks.prop[key].set) {
+        value = Hooks.prop[key].set.call(this, key, value);
+      }
+
+      this[key] = value;
+
+      return this;
     }.setter(),
 
     removeProp: function removeProp(key) {
@@ -78,13 +137,9 @@
       } catch (e) {}
 
       return this;
-    }
+    }.remover(),
 
-  });
-
-  /*------------------------------------ Utility ------------------------------------*/
-
-  Element.implement({
+    /*------------------------------------ Utility ------------------------------------*/
 
     html: function html(value) {
       return (typeOf(value) === 'null') ? this.getHtml() : this.setHtml(value);
@@ -126,13 +181,9 @@
       this.value = value;
 
       return this;
-    }
+    },
 
-  });
-
-  /*------------------------------------ Styles ------------------------------------*/
-
-  Element.implement({
+    /*------------------------------------ Styles ------------------------------------*/
 
     css: function css(key, value) {
       return doGetOrSet(this, key, value, this.getStyle, this.setStyle);
@@ -148,13 +199,9 @@
 
     removeStyle: function removeStyle(key) {
 
-    }
+    },
 
-  });
-
-  /*------------------------------------ Classes ------------------------------------*/
-
-  Element.implement({
+    /*------------------------------------ Classes ------------------------------------*/
 
     addClass: function addClass(name) {
       this.classList.add(name);
@@ -180,24 +227,9 @@
       this.classList.toggle(name);
 
       return this;
-    }
+    },
 
-  });
-
-  /*------------------------------------ Dimensions ------------------------------------*/
-
-  function getSumOfStyles(element, keys) {
-    var style = getComputedStyle(element),
-        value = 0;
-
-    for (var i = 0, l = keys.length; i < l; i++) {
-      value += style[keys[i]];
-    }
-
-    return value;
-  }
-
-  Element.implement({
+    /*------------------------------------ Dimensions ------------------------------------*/
 
     dimensions: function() {
       return {
@@ -236,13 +268,9 @@
 
     outerWidth: function outerWidth() {
       return this.width() + getSumOfStyles(this, ['margin-left', 'margin-right']);
-    }
+    },
 
-  });
-
-  /*------------------------------------ Position ------------------------------------*/
-
-  Element.implement({
+    /*------------------------------------ Position ------------------------------------*/
 
     position: function position() {
 
@@ -252,7 +280,7 @@
 
     },
 
-    top: function top() {
+    /*top: function top() {
 
     },
 
@@ -270,13 +298,9 @@
 
     scrollLeft: function scrollLeft() {
 
-    }
+    },*/
 
-  });
-
-  /*------------------------------------ Elements ------------------------------------*/
-
-  Element.implement({
+    /*------------------------------------ Elements ------------------------------------*/
 
     append: function append(element) {
 

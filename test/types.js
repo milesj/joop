@@ -48,7 +48,7 @@ describe('Types', function() {
       expect(typeOf(document.createElement('div'))).to.equal('element');
     });
     it('node is textnode', function() {
-      expect(typeOf(document.createTextNode('text'))).to.equal('textnode');
+      expect(typeOf(document.createTextNode('text'))).to.equal('text');
     });
     it('node is whitespace', function() {
       expect(typeOf(document.createTextNode(''))).to.equal('whitespace');

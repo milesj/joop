@@ -21,29 +21,30 @@
     if (item === null || type === 'undefined') {
       return 'null';
 
-    } else if (item.nodeName) {
-      if (item.nodeType === 1) {
-        return 'element';
+    } else if (type === 'object') {
+      if (item.nodeName) {
+        if (item.nodeType === 1) {
+          return 'element';
 
-      } else if (item.nodeType === 3) {
-        return (/\S/.test(item.nodeValue)) ? 'textnode' : 'whitespace';
+        } else if (item.nodeType === 3) {
+          return (/\S/.test(item.nodeValue)) ? 'text' : 'whitespace';
+        }
+
+      } else if (typeof item.length === 'number' && type !== 'string') {
+        if ('callee' in item) {
+          return 'arguments';
+
+        } else if ('item' in item) {
+          return 'collection';
+        }
       }
 
-    } else if (typeof item.length === 'number' && type !== 'string') {
-      if ('callee' in item) {
-        return 'arguments';
-
-      } else if ('item' in item) {
-        return 'collection';
-      }
-    }
-
-    if (type === 'object') {
       return _toString.call(item).replace(/\[object ([a-zA-Z]+)\]/, function(a, b) {
         return b.toLowerCase();
       });
+    }
 
-    } else if (type === 'number' && !isFinite(item)) {
+    if (type === 'number' && !isFinite(item)) {
       return 'null'; // nan
     }
 
@@ -96,7 +97,7 @@
     var self = this;
 
     return function overloadGetter(a) {
-      var data = [];
+      var data = {};
 
       if (typeOf(a) === 'array') {
         for (var i = 0, l = a.length; i < l; i++) {
@@ -134,6 +135,22 @@
 
       return this;
     };
+  };
+
+  Func.remover = function remover() {
+    var self = this;
+
+    return function overloadRemover(a) {
+      if (typeOf(a) === 'array') {
+        for (var i = 0, l = a.length; i < l; i++) {
+          self.call(this, a[i]);
+        }
+      } else {
+        self.call(this, a);
+      }
+
+      return this;
+    }
   };
 
   /**
