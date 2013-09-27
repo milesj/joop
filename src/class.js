@@ -137,151 +137,152 @@
 
   /*------------------------------------ Methods ------------------------------------*/
 
-  /** Reference the Function prototype */
-  var Func = Function.prototype;
+  Function.implement({
 
-  /**
-   * Mark a function as static.
-   * Static methods can be called without an instance.
-   *
-   * @returns {Function}
-   */
-  Func.static = function isStatic() {
-    this.$static = true;
+    /**
+     * Mark a function as static.
+     * Static methods can be called without an instance.
+     *
+     * @returns {Function}
+     */
+    static: function isStatic() {
+      this.$static = true;
 
-    return this;
-  };
+      return this;
+    },
 
-  /**
-   * Mark a function as protected.
-   * Protected methods cannot be overwritten in classes.
-   *
-   * @returns {Function}
-   */
-  Func.protect = function isProtected() {
-    this.$protected = true;
+    /**
+     * Mark a function as protected.
+     * Protected methods cannot be overwritten in classes.
+     *
+     * @returns {Function}
+     */
+    protect: function isProtected() {
+      this.$protected = true;
 
-    return this;
-  };
+      return this;
+    },
 
-  /**
-   * Mark a function as private.
-   * Private methods will not be inherited by classes.
-   *
-   * @returns {Function}
-   */
-  Func.private = function isPrivate() {
-    this.$private = true;
+    /**
+     * Mark a function as private.
+     * Private methods will not be inherited by classes.
+     *
+     * @returns {Function}
+     */
+    private: function isPrivate() {
+      this.$private = true;
 
-    return this;
-  };
+      return this;
+    },
 
-  /**
-   * Provides a way to type hint function arguments.
-   * Any argument that does not match the type will throw an error.
-   * Use of nulls can be used for skipping arguments or accepting no value.
-   * Also accepts classes and namespaces.
-   *
-   * @param {Array} types
-   * @returns {Function}
-   */
-  Func.hint = function typeHint(types) {
-    var self = this;
+    /**
+     * Provides a way to type hint function arguments.
+     * Any argument that does not match the type will throw an error.
+     * Use of nulls can be used for skipping arguments or accepting no value.
+     * Also accepts classes and namespaces.
+     *
+     * @param {Array} types
+     * @returns {Function}
+     */
+    hint: function typeHint(types) {
+      var self = this;
 
-    return function hint() {
-      /*jshint newcap:false */
+      return function hint() {
+        /*jshint newcap:false */
 
-      var arg, argType, type, error, errorType;
+        var arg, argType, type, error, errorType;
 
-      for (var i = 0, l = types.length; i < l; i++) {
-        arg = arguments[i];
-        type = types[i];
-        error = false;
-        argType = typeOf(arg);
-        errorType = type;
+        for (var i = 0, l = types.length; i < l; i++) {
+          arg = arguments[i];
+          type = types[i];
+          error = false;
+          argType = typeOf(arg);
+          errorType = type;
 
-        if (argType === 'null' || type === null || arg === null) {
-          continue;
+          if (argType === 'null' || type === null || arg === null) {
+            continue;
+          }
+
+          switch (type) {
+            case 'arr':
+            case 'array':     error = (argType !== 'array'); break;
+            case 'obj':
+            case 'object':    error = (argType !== 'object'); break;
+            case 'str':
+            case 'string':    error = (argType !== 'string'); break;
+            case 'int':
+            case 'integer':
+            case 'num':
+            case 'number':    error = (argType !== 'number'); break;
+            case 'bool':
+            case 'boolean':   error = (argType !== 'boolean'); break;
+            case 'fn':
+            case 'func':
+            case 'function':  error = (argType !== 'function'); break;
+            case 'regex':
+            case 'regexp':    error = (argType !== 'regexp'); break;
+            default:
+              // Allows type hints for "Name.Space.Class"
+              if (typeof type === 'string') {
+                error = (arg.className() !== type);
+
+              // Allows direct linking to class interface object
+              } else {
+                error = !type.prototype.isPrototypeOf(arg);
+                errorType = new type().className();
+              }
+            break;
+          }
+
+          // Throw an error
+          if (error) {
+            throw new Error('Argument ' + i + ' must be of type ' + errorType);
+          }
         }
 
-        switch (type) {
-          case 'arr':
-          case 'array':     error = (argType !== 'array'); break;
-          case 'obj':
-          case 'object':    error = (argType !== 'object'); break;
-          case 'str':
-          case 'string':    error = (argType !== 'string'); break;
-          case 'int':
-          case 'integer':
-          case 'num':
-          case 'number':    error = (argType !== 'number'); break;
-          case 'bool':
-          case 'boolean':   error = (argType !== 'boolean'); break;
-          case 'fn':
-          case 'func':
-          case 'function':  error = (argType !== 'function'); break;
-          case 'regex':
-          case 'regexp':    error = (argType !== 'regexp'); break;
-          default:
-            // Allows type hints for "Name.Space.Class"
-            if (typeof type === 'string') {
-              error = (arg.className() !== type);
+        return self.apply(this, arguments);
+      }.extend('$hints', types);
+    },
 
-            // Allows direct linking to class interface object
-            } else {
-              error = !type.prototype.isPrototypeOf(arg);
-              errorType = new type().className();
-            }
-          break;
+    /**
+     * Cache the result of the function and return that value for all subsequent calls.
+     * Based on the memoization pattern. Currently no way to clear the cache.
+     *
+     * @returns {Function}
+     */
+    memoize: function memoizer() {
+      var self = this, cache = null;
+
+      return function memoize() {
+        if (cache) {
+          return cache;
         }
 
-        // Throw an error
-        if (error) {
-          throw new Error('Argument ' + i + ' must be of type ' + errorType);
+        return cache = self.apply(this, arguments);
+      };
+    },
+
+    /**
+     * Mark a function as deprecated. When the method is called, log a warning.
+     * Deprecated methods will not halt the interpreter.
+     *
+     * @param {String} message
+     * @returns {Function}
+     */
+    deprecate: function deprecater(message) {
+      var self = this, warned = false;
+
+      return function deprecate() {
+        if (!warned && isDefined(console)) {
+          console.warn('This method is deprecated. ' + message + '\n' + new Error(message).stack);
+          warned = true;
         }
-      }
 
-      return self.apply(this, arguments);
-    }.extend('$hints', types);
-  };
+        return self.apply(this, arguments);
+      }.extend('$deprecated', message);
+    }
 
-  /**
-   * Cache the result of the function and return that value for all subsequent calls.
-   * Based on the memoization pattern. Currently no way to clear the cache.
-   *
-   * @returns {Function}
-   */
-  Func.memoize = function memoizer() {
-    var self = this, cache = null;
-
-    return function memoize() {
-      if (cache) {
-        return cache;
-      }
-
-      return cache = self.apply(this, arguments);
-    };
-  };
-
-  /**
-   * Mark a function as deprecated. When the method is called, log a warning.
-   * Deprecated methods will not halt the interpreter.
-   *
-   * @param {String} message
-   * @returns {Function}
-   */
-  Func.deprecate = function deprecater(message) {
-    var self = this, warned = false;
-
-    return function deprecate() {
-      if (!warned && isDefined(console)) {
-        console.warn('This method is deprecated. ' + message + '\n' + new Error(message).stack);
-        warned = true;
-      }
-
-      return self.apply(this, arguments);
-    }.extend('$deprecated', message);
-  };
+  });
 
   /*------------------------------------ Classes ------------------------------------*/
 

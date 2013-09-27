@@ -10,4 +10,4 @@ Since extending the DOM is frowned upon because of legacy issues, this project w
 
 [Joop is loosely based on this wonderful article.](http://perfectionkills.com/whats-wrong-with-extending-the-dom)
 
-This project is basically the bastard love child of jQuery, MooTools and Prototype.
+This project is basically the bastard love child of jQuery, MooTools and Prototype. Big thanks to those libraries for any code I have borrowed or based from.

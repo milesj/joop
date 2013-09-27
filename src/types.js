@@ -137,6 +137,11 @@
     };
   };
 
+  /**
+   * Overload a remover method by allowing an array of keys to be passed.
+   *
+   * @returns {Function}
+   */
   Func.remover = function remover() {
     var self = this;
 
@@ -250,10 +255,21 @@
 
   String.implement({
 
+    /**
+     * Convert a string to an integer.
+     *
+     * @param {Number} base
+     * @returns {Number}
+     */
     toInt: function(base) {
       return parseInt(this, base || 10);
     },
 
+    /**
+     * Convert a string to a float.
+     *
+     * @returns {Number}
+     */
     toFloat: function() {
       return parseFloat(this);
     }
