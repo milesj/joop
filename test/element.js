@@ -250,4 +250,223 @@ describe('Element', function() {
       expect(element.getProp('id')).to.equal('test-id');
     });
   });
+
+  describe('addClass()', function() {
+    it('should add class', function() {
+      element.addClass('baz');
+
+      expect(element.className).to.equal('foo bar baz');
+    });
+
+    it('should add multiple classes', function() {
+      element.addClass('baz box');
+
+      expect(element.className).to.equal('foo bar baz box');
+    });
+
+    it('should add multiple classes via array', function() {
+      element.addClass(['baz', 'box']);
+
+      expect(element.className).to.equal('foo bar baz box');
+    });
+
+    it('should not add class twice', function() {
+      element.addClass('bar');
+
+      expect(element.className).to.equal('foo bar');
+    });
+  });
+
+  describe('removeClass()', function() {
+    it('should remove class', function() {
+      element.removeClass('bar');
+
+      expect(element.className).to.equal('foo');
+    });
+
+    it('should remove multiple classes', function() {
+      element.removeClass('foo bar');
+
+      expect(element.className).to.equal('');
+    });
+
+    it('should removeClass multiple classes via array', function() {
+      element.removeClass(['foo', 'bar']);
+
+      expect(element.className).to.equal('');
+    });
+  });
+
+  describe('hasClass()', function() {
+    it('should check for classes', function() {
+      expect(element.hasClass('foo')).to.be.true;
+      expect(element.hasClass('baz')).to.be.false;
+    });
+
+    it('should return true if all classes exist', function() {
+      expect(element.hasClass('foo bar')).to.be.true;
+      expect(element.hasClass(['foo', 'bar'])).to.be.true;
+      expect(element.hasClass(['foo', 'bar', 'baz'])).to.be.false;
+    });
+  });
+
+  describe('swapClass()', function() {
+    it('should replace one class with another', function() {
+      element.swapClass('bar', 'baz');
+
+      expect(element.className).to.equal('foo baz');
+
+      element.swapClass('baz', 'baz');
+
+      expect(element.className).to.equal('foo baz');
+
+      element.swapClass('unknown', 'known');
+
+      expect(element.className).to.equal('foo baz known');
+    })
+  });
+
+  describe('toggleClass()', function() {
+    it('should toggle a class on and off', function() {
+      element.toggleClass('foo');
+
+      expect(element.className).to.equal('bar');
+
+      element.toggleClass('foo');
+
+      expect(element.className).to.equal('bar foo');
+    });
+  });
+
+  describe('innerHeight()', function() {
+    it('should return height', function() {
+      element.style.height = '666px';
+      element.style.MozBoxSizing = 'content-box'; // TODO use non-mozilla
+
+      expect(element.innerHeight()).to.equal(666);
+
+      element.style.MozBoxSizing = 'border-box';
+
+      expect(element.innerHeight()).to.equal(666);
+    });
+  });
+
+  describe('height()', function() {
+    it('should return height + padding + border', function() {
+      element.style.height = '100px';
+      element.style.padding = '15px';
+      element.style.border = '5px solid black';
+      element.style.MozBoxSizing = 'content-box'; // TODO use non-mozilla
+
+      expect(element.height()).to.equal(140);
+
+      element.style.MozBoxSizing = 'border-box';
+
+      expect(element.height()).to.equal(140);
+    });
+  });
+
+  describe('outerHeight()', function() {
+    it('should return height + padding + border + margin', function() {
+      element.style.height = '160px';
+      element.style.padding = '6px';
+      element.style.margin = '4px';
+      element.style.border = '5px solid black';
+      element.style.MozBoxSizing = 'content-box'; // TODO use non-mozilla
+
+      expect(element.outerHeight()).to.equal(190);
+
+      element.style.MozBoxSizing = 'border-box';
+
+      expect(element.outerHeight()).to.equal(190);
+    });
+  });
+
+  describe('innerWidth()', function() {
+    it('should return width', function() {
+      element.style.width = '666px';
+      element.style.MozBoxSizing = 'content-box'; // TODO use non-mozilla
+
+      expect(element.innerWidth()).to.equal(666);
+
+      element.style.MozBoxSizing = 'border-box';
+
+      expect(element.innerWidth()).to.equal(666);
+    });
+  });
+
+  describe('width()', function() {
+    it('should return width + padding + border', function() {
+      element.style.width = '100px';
+      element.style.padding = '15px';
+      element.style.border = '5px solid black';
+      element.style.MozBoxSizing = 'content-box'; // TODO use non-mozilla
+
+      expect(element.width()).to.equal(140);
+
+      element.style.MozBoxSizing = 'border-box';
+
+      expect(element.width()).to.equal(140);
+    });
+  });
+
+  describe('outerWidth()', function() {
+    it('should return width + padding + border + margin', function() {
+      element.style.width = '160px';
+      element.style.padding = '6px';
+      element.style.margin = '4px';
+      element.style.border = '5px solid black';
+      element.style.MozBoxSizing = 'content-box'; // TODO use non-mozilla
+
+      expect(element.outerWidth()).to.equal(190);
+
+      element.style.MozBoxSizing = 'border-box';
+
+      expect(element.outerWidth()).to.equal(190);
+    });
+  });
+
+  describe('dimensions()', function() {
+    it('should return the default, inner or outer sizes', function() {
+      element.style.width = '233px';
+      element.style.height = '732px';
+      element.style.padding = '11px';
+      element.style.margin = '8px';
+      element.style.border = '3px solid black';
+      element.style.MozBoxSizing = 'content-box'; // TODO use non-mozilla
+
+      expect(element.dimensions()).to.deep.equal({
+        width: 261,
+        height: 760
+      });
+
+      expect(element.dimensions('inner')).to.deep.equal({
+        width: 233,
+        height: 732
+      });
+
+      expect(element.dimensions('outer')).to.deep.equal({
+        width: 277,
+        height: 776
+      });
+
+      element.style.MozBoxSizing = 'border-box';
+
+      expect(element.dimensions()).to.deep.equal({
+        width: 261,
+        height: 760
+      });
+
+      expect(element.dimensions('inner')).to.deep.equal({
+        width: 233,
+        height: 732
+      });
+
+      expect(element.dimensions('outer')).to.deep.equal({
+        width: 277,
+        height: 776
+      });
+    });
+  });
+
 });

@@ -246,4 +246,18 @@
 
   });
 
+  /*------------------------------------ String ------------------------------------*/
+
+  String.implement({
+
+    toInt: function(base) {
+      return parseInt(this, base || 10);
+    },
+
+    toFloat: function() {
+      return parseFloat(this);
+    }
+
+  });
+
 }).call(this);

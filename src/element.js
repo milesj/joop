@@ -37,16 +37,32 @@
 
   function getSumOfStyles(element, keys) {
     var style = getComputedStyle(element),
-      value = 0;
+        value = 0;
 
     for (var i = 0, l = keys.length; i < l; i++) {
-      value += style[keys[i]];
+      value += style[keys[i]].toInt();
     }
 
     return value;
   }
 
   /*------------------------------------ Hooks ------------------------------------*/
+
+  function callGetHook(hooks, self, key, value) {
+    if (hooks[key] && hooks[key].get) {
+      return hooks[key].get.call(self, key);
+    }
+
+    return value;
+  }
+
+  function callSetHook(hooks, self, key, value) {
+    if (hooks[key] && hooks[key].set) {
+      value = hooks[key].set.call(self, key, value);
+    }
+
+    return value;
+  }
 
   function setBoolHook(key, value) {
     return (typeOf(value) !== 'boolean') ? (key === value) : value;
@@ -105,16 +121,13 @@
     },
 
     getProp: function getProp(key) {
-      if (Hooks.prop[key] && Hooks.prop[key].get) {
-        return Hooks.prop[key].get.call(this, key);
-      }
 
       // Props can be false so check for it
-      if (typeof this[key] === 'undefined') {
+      if (typeof this[key] === 'undefined' && !Hooks.prop[key]) {
         return null;
       }
 
-      return this[key];
+      return callGetHook(Hooks.prop, this, key, this[key]);
     }.getter(),
 
     setProp: function setProp(key, value) {
@@ -122,11 +135,7 @@
         value = value.call(this, this.getProp(key)); // current prop as argument
       }
 
-      if (Hooks.prop[key] && Hooks.prop[key].set) {
-        value = Hooks.prop[key].set.call(this, key, value);
-      }
-
-      this[key] = value;
+      this[key] = callSetHook(Hooks.prop, this, key, value);
 
       return this;
     }.setter(),
@@ -204,19 +213,41 @@
     /*------------------------------------ Classes ------------------------------------*/
 
     addClass: function addClass(name) {
-      this.classList.add(name);
+      if (typeOf(name) !== 'array') {
+        name = name.split(' ');
+      }
+
+      for (var i = 0, l = name.length; i < l; i++) {
+        this.classList.add(name[i]);
+      }
 
       return this;
     },
 
     removeClass: function removeClass(name) {
-      this.classList.remove(name);
+      if (typeOf(name) !== 'array') {
+        name = name.split(' ');
+      }
+
+      for (var i = 0, l = name.length; i < l; i++) {
+        this.classList.remove(name[i]);
+      }
 
       return this;
     },
 
     hasClass: function hasClass(name) {
-      return this.classList.contains(name);
+      if (typeOf(name) !== 'array') {
+        name = name.split(' ');
+      }
+
+      for (var i = 0, l = name.length; i < l; i++) {
+        if (!this.classList.contains(name[i])) {
+          return false;
+        }
+      }
+
+      return true;
     },
 
     swapClass: function swapClass(remove, add) {
@@ -231,43 +262,58 @@
 
     /*------------------------------------ Dimensions ------------------------------------*/
 
-    dimensions: function() {
-      return {
-        width: this.width(),
-        height: this.height()
-      };
+    // TODO validate box-sizing content-box vs border-box?
+    // TODO validate number -> px conversions
+
+    dimensions: function dimensions(size) {
+      var width, height;
+
+      if (size === 'inner') {
+        width = this.innerWidth();
+        height = this.innerHeight();
+
+      } else if (size === 'outer') {
+        width = this.outerWidth();
+        height = this.outerHeight();
+
+      } else {
+        width = this.width();
+        height = this.height();
+      }
+
+      return { width: width, height: height };
     },
 
     height: function height() {
       return getSumOfStyles(this, [
         'height',
-        'padding-top', 'padding-bottom',
-        'border-top', 'border-bottom'
+        'paddingTop', 'paddingBottom',
+        'borderTopWidth', 'borderBottomWidth'
       ]);
     },
 
     innerHeight: function innerHeight() {
-      return getComputedStyle(this).height;
+      return getComputedStyle(this).height.toInt();
     },
 
     outerHeight: function outerHeight() {
-      return this.height() + getSumOfStyles(this, ['margin-top', 'margin-bottom']);
+      return this.height() + getSumOfStyles(this, ['marginTop', 'marginBottom']);
     },
 
     width: function width() {
       return getSumOfStyles(this, [
         'width',
-        'padding-left', 'padding-right',
-        'border-left', 'border-right'
+        'paddingLeft', 'paddingRight',
+        'borderLeftWidth', 'borderRightWidth'
       ]);
     },
 
     innerWidth: function innerWidth() {
-      return getComputedStyle(this).width;
+      return getComputedStyle(this).width.toInt();
     },
 
     outerWidth: function outerWidth() {
-      return this.width() + getSumOfStyles(this, ['margin-left', 'margin-right']);
+      return this.width() + getSumOfStyles(this, ['marginLeft', 'marginRight']);
     },
 
     /*------------------------------------ Position ------------------------------------*/
