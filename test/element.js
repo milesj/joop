@@ -251,6 +251,112 @@ describe('Element', function() {
     });
   });
 
+  describe('getStyle()', function() {
+    it('should return a style in any format', function() {
+      element.style.border = '10px solid black';
+      element.style.cssFloat = 'left';
+      element.style.display = 'none';
+      element.style.font = 'bold 12px/115% Arial, Tahoma, sans-serif';
+
+      expect(element.getStyle('float')).to.equal('left'); // uses cssFloat
+      expect(element.getStyle('font-size')).to.equal('12px'); // convert to camel
+      expect(element.getStyle('border-width')).to.equal('10px'); // convert to camel
+      expect(element.getStyle('fontFamily')).to.equal('Arial,Tahoma,sans-serif');
+    });
+
+    it('should return multiple styles', function() {
+      element.style.border = '10px solid black';
+
+      expect(element.getStyle(['border-width', 'border-style'])).to.deep.equal({
+        'border-width': '10px',
+        'border-style': 'solid'
+      });
+    });
+
+    it('should return hooks', function() {
+      element.style.margin = '3px 2px 1px';
+
+      expect(element.getStyle('margin')).to.deep.equal({
+        'margin-top': '3px',
+        'margin-right': '2px',
+        'margin-bottom': '1px',
+        'margin-left': '2px'
+      });
+
+      element.style.padding = '4px';
+
+      expect(element.getStyle('padding')).to.deep.equal({
+        'padding-top': '4px',
+        'padding-right': '4px',
+        'padding-bottom': '4px',
+        'padding-left': '4px'
+      });
+    });
+
+    it('should return vendor prefixed styles', function() {
+      element.style.MozBoxSizing = 'content-box';
+      element.style.WebkitBoxSizing = 'content-box';
+      element.style.OBoxSizing = 'content-box';
+      element.style.msBoxSizing = 'content-box';
+
+      expect(element.getStyle('box-sizing')).to.equal('content-box');
+    });
+  });
+
+  describe('setStyle()', function() {
+    it('should set a style', function() {
+      element.setStyle('display', 'inline');
+
+      expect(element.getStyle('display')).to.equal('inline');
+    });
+
+    it('should set multiple styles', function() {
+      element.setStyle({
+        backgroundPosition: '50% 50%',
+        float: 'right',
+        padding: '10px',
+        'border-style': 'dashed'
+      });
+
+      expect(element.getStyle(['background-position', 'float', 'padding', 'border-style'])).to.deep.equal({
+        'background-position': '50% 50%',
+        'float': 'right',
+        'padding': { // via hook
+          'padding-top': '10px',
+          'padding-right': '10px',
+          'padding-bottom': '10px',
+          'padding-left': '10px'
+        },
+        'border-style': 'dashed'
+      });
+    });
+
+    it('should not set nulls or empty', function() {
+      element.setStyle('float', 'right');
+      element.setStyle('float', null);
+
+      expect(element.getStyle('float')).to.equal('right');
+    });
+
+    it('should auto-pixel numbers or exclude protected', function() {
+      element.setStyle({
+        width: 125,
+        height: '250px',
+        opacity: 0.6,
+        'z-index': 6
+      });
+
+      console.log(element.getStyle(['width', 'height', 'opacity', 'z-index']));
+
+      expect(element.getStyle(['width', 'height', 'opacity', 'z-index'])).to.deep.equal({
+        width: '125px',
+        height: '250px',
+        opacity: '0.6',
+        'z-index': '6'
+      });
+    });
+  });
+
   describe('addClass()', function() {
     it('should add class', function() {
       element.addClass('baz');

@@ -7,6 +7,58 @@
 (function() {
   'use strict';
 
+  // Possible vendor prefixes for props
+  var vendorPrefixes = ['Webkit', 'Moz', 'ms', 'O'],
+      vendorPrefixLookup = {};
+
+  // Props that shouldn't append "px"
+  var pixellessNumbers = {
+    columnCount: true,
+    fillOpacity: true,
+    fontWeight: true,
+    lineHeight: true,
+    opacity: true,
+    orphans: true,
+    widows: true,
+    zIndex: true,
+    zoom: true
+  };
+
+  // DOM properties considered boolean only
+  var booleans = 'checked|selected|async|autofocus|autoplay|controls|defer|disabled|hidden|ismap|loop|multiple|open|readonly|required|scoped';
+
+  // Mapping of getter and setter hooks
+  var Hooks = {
+
+    // Properties
+    prop: {
+      tag: {
+        get: function getTagProp(key) {
+          return (this.tagName || this.nodeName).toLowerCase();
+        }
+      }
+    },
+
+    // CSS styles
+    style: {
+      margin: {
+        get: function getMarginStyle(key) {
+          return this.getStyle(['margin-top', 'margin-right', 'margin-bottom', 'margin-left']);
+        }
+      },
+      padding: {
+        get: function getPaddingStyle(key) {
+          return this.getStyle(['padding-top', 'padding-right', 'padding-bottom', 'padding-left']);
+        }
+      }
+    }
+  };
+
+  // Add setter hooks for boolean properties
+  booleans.split('|').forEach(function(bool) {
+    Hooks.prop[bool] = { set: setBoolHook };
+  });
+
   /**
    * Universal function that handles the getting, setting and removing of data.
    * The type of action is determined by the following:
@@ -23,9 +75,9 @@
    * @param {Element} self
    * @param {String|Array|Object} key
    * @param {*} value
-   * @param {Function} getter
-   * @param {Function} setter
-   * @param {Function} remover
+   * @param {Function} [getter]
+   * @param {Function} [setter]
+   * @param {Function} [remover]
    * @returns {*}
    */
   function doGetOrSet(self, key, value, getter, setter, remover) {
@@ -80,7 +132,49 @@
     return value;
   }
 
-  /*------------------------------------ Hooks ------------------------------------*/
+  /**
+   * Convert dashed form to camelcase. Prepend vendor prefix if necessary.
+   * Example: background-color -> backgroundColor
+   *
+   * @param {Element} element
+   * @param {String} key
+   * @returns {String}
+   */
+  function convertCssProperty(element, key) {
+    if (key === 'float') {
+      return 'cssFloat';
+    }
+
+    var styles = element.style;
+
+    if (key.indexOf('-')) {
+      key = key.replace(/-([a-z0-9])/ig, function(value, letter) {
+        return letter.toUpperCase();
+      });
+    }
+
+    // Used cached lookup
+    if (key in styles) {
+      return key;
+    } else if (vendorPrefixLookup[key]) {
+      return vendorPrefixLookup[key];
+    }
+
+    // Prepend vendor prefix
+    var capKey = key.charAt(0).toUpperCase() + key.slice(1),
+        vendorKey;
+
+    for (var i = 0, p; p = vendorPrefixes[i]; i++) {
+      vendorKey = p + capKey;
+
+      if (vendorKey in styles) {
+        vendorPrefixLookup[key] = vendorKey;
+        return vendorKey;
+      }
+    }
+
+    return key;
+  }
 
   /**
    * Handles the detection and execution of getter hooks.
@@ -127,27 +221,6 @@
   function setBoolHook(key, value) {
     return (typeOf(value) !== 'boolean') ? (key === value) : value;
   }
-
-  // DOM properties considered boolean only
-  var booleans = 'checked|selected|async|autofocus|autoplay|controls|defer|disabled|hidden|ismap|loop|multiple|open|readonly|required|scoped';
-
-  // Mapping of getter and setter hooks
-  var Hooks = {
-    prop: {
-      tag: {
-        get: function getTagProp(key) {
-          return (this.tagName || this.nodeName).toLowerCase();
-        }
-      }
-    }
-  };
-
-  // Add setter hooks for boolean properties
-  booleans.split('|').forEach(function(bool) {
-    Hooks.prop[bool] = { set: setBoolHook };
-  });
-
-  /*------------------------------------ Element ------------------------------------*/
 
   Element.implement({
 
@@ -308,20 +381,46 @@
     /*------------------------------------ Styles ------------------------------------*/
 
     css: function css(key, value) {
-      return doGetOrSet(this, key, value, this.getStyle, this.setStyle);
+      return doGetOrSet(this, key, value, this.getStyle, this.setStyle, this.removeStyle);
     },
 
     getStyle: function getStyle(key) {
+      key = convertCssProperty(this, key);
 
+      return callGetHook(Hooks.style, this, key, this.style[key] || null);
     }.getter(),
 
     setStyle: function setStyle(key, value) {
+      key = convertCssProperty(this, key);
 
+      if (typeOf(value) === 'function') {
+        value = value.call(this, this.getStyle(key)); // current style as argument
+      }
+
+      value = callSetHook(Hooks.style, this, key, value);
+
+      var type = typeOf(value);
+
+      // Dont allow null or NaN values
+      if (type === 'null') {
+        return this;
+      }
+
+      // Auto pixel numbers
+      if (type === 'number' && !pixellessNumbers[key]) {
+        value += 'px';
+      }
+
+      this.style[key] = value;
+
+      return this;
     }.setter(),
 
     removeStyle: function removeStyle(key) {
+      this.style[convertCssProperty(this, key)] = '';
 
-    },
+      return this;
+    }.remover(),
 
     /*------------------------------------ Classes ------------------------------------*/
 
