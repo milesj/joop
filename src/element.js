@@ -146,9 +146,9 @@
     return (typeOf(value) !== 'boolean') ? (key === value) : value;
   }
 
-  Element.implement({
+  /*------------------------------------ Attributes ------------------------------------*/
 
-    /*------------------------------------ Attributes ------------------------------------*/
+  Element.implement({
 
     /**
      * Universal getter, setter and remover for HTML attributes.
@@ -194,9 +194,12 @@
       this.removeAttribute(key);
 
       return this;
-    }.remover(),
+    }.remover()
+  });
 
-    /*------------------------------------ Properties ------------------------------------*/
+  /*------------------------------------ Properties ------------------------------------*/
+
+  Element.implement({
 
     /**
      * Universal getter, setter and remover for DOM properties.
@@ -248,9 +251,12 @@
       } catch (e) {}
 
       return this;
-    }.remover(),
+    }.remover()
+  });
 
-    /*------------------------------------ Utility ------------------------------------*/
+  /*------------------------------------ Utility ------------------------------------*/
+
+  Element.implement({
 
     html: function html(value) {
       return (typeOf(value) === 'null') ? this.getHtml() : this.setHtml(value);
@@ -290,6 +296,43 @@
 
     setVal: function setVal(value) {
       this.value = value;
+
+      return this;
+    },
+
+    /**
+     * Hide an element by setting its display to none.
+     *
+     * @returns {Element}
+     */
+    hide: function hide() {
+      this.style.display = 'none';
+
+      return this;
+    },
+
+    /**
+     * Show an element by setting its display to the default.
+     *
+     * @returns {Element}
+     */
+    show: function show() {
+      this.style.display = '';
+
+      return this;
+    },
+
+    /**
+     * Toggle the display of an element.
+     *
+     * @returns {Element}
+     */
+    toggle: function toggle() {
+      if (this.style.display === 'none') {
+        this.show();
+      } else {
+        this.hide();
+      }
 
       return this;
     }
@@ -338,7 +381,7 @@
    */
   function getSumOfStyles(element, keys) {
     var style = getComputedStyle(element),
-      value = 0;
+        value = 0;
 
     for (var i = 0, l = keys.length; i < l; i++) {
       value += style[keys[i]].toInt();
@@ -384,7 +427,7 @@
     }
 
     var capKey = key.charAt(0).toUpperCase() + key.slice(1),
-      vendorKey;
+        vendorKey;
 
     for (var i = 0, p; p = vendorPrefixes[i]; i++) {
       vendorKey = p + capKey;
@@ -480,9 +523,13 @@
       this.style[applyVendorPrefix(this.style, convertCssProperty(key))] = '';
 
       return this;
-    }.remover(),
+    }.remover()
 
-    /*------------------------------------ Classes ------------------------------------*/
+  });
+
+  /*------------------------------------ Classes ------------------------------------*/
+
+  Element.implement({
 
     /**
      * Add a single or multiple classes.
@@ -561,12 +608,14 @@
       this.classList.toggle(name);
 
       return this;
-    },
+    }
+  });
 
-    /*------------------------------------ Dimensions ------------------------------------*/
+  /*------------------------------------ Dimensions ------------------------------------*/
 
-    // TODO validate box-sizing content-box vs border-box?
-    // TODO validate number -> px conversions
+  // TODO validate box-sizing content-box vs border-box?
+
+  Element.implement({
 
     /**
      * Return the width and height of an element.
@@ -660,9 +709,12 @@
      */
     outerWidth: function outerWidth() {
       return this.width() + getSumOfStyles(this, ['marginLeft', 'marginRight']);
-    },
+    }
+  });
 
-    /*------------------------------------ Position ------------------------------------*/
+  /*------------------------------------ Position ------------------------------------*/
+
+  Element.implement({
 
     position: function position() {
 
@@ -670,7 +722,7 @@
 
     coordinates: function coordinates() {
 
-    },
+    }
 
     /*top: function top() {
 
@@ -691,8 +743,11 @@
     scrollLeft: function scrollLeft() {
 
     },*/
+  });
 
-    /*------------------------------------ Elements ------------------------------------*/
+  /*------------------------------------ Elements ------------------------------------*/
+
+  Element.implement({
 
     append: function append(element) {
 

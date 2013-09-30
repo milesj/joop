@@ -251,6 +251,30 @@ describe('Element', function() {
     });
   });
 
+  describe('hide()', function() {
+    it('should hide element', function() {
+      element.hide();
+      expect(element.css('display')).to.equal('none');
+    });
+  });
+
+  describe('show()', function() {
+    it('should show element', function() {
+      element.show();
+      expect(element.css('display')).to.equal(null);
+    });
+  });
+
+  describe('toggle()', function() {
+    it('should toggle display of element', function() {
+      element.toggle();
+      expect(element.css('display')).to.equal('none');
+
+      element.toggle();
+      expect(element.css('display')).to.equal(null);
+    });
+  });
+
   describe('css()', function() {
     it('should get and set styles', function() {
       element.css('display', 'block').css({
@@ -423,7 +447,9 @@ describe('Element', function() {
 
       expect(element.getStyle('width')).to.equal('309.25px');
 
-      console.log(element);
+      element.setStyle('width', '-=foo');
+
+      expect(element.getStyle('width')).to.equal('309.25px');
     });
   });
 
