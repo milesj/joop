@@ -251,6 +251,70 @@ describe('Element', function() {
     });
   });
 
+  describe('text()', function() {
+    it('should get text', function() {
+      element.textContent = 'Lorem ipsum';
+
+      expect(element.text()).to.equal('Lorem ipsum');
+    });
+
+    it('should set text', function() {
+      element.text('Lorem ipsum');
+
+      expect(element.text()).to.equal('Lorem ipsum');
+    });
+  });
+
+  describe('getText()', function() {
+    it('should return text', function() {
+      element.textContent = 'Lorem ipsum';
+
+      expect(element.getText()).to.equal('Lorem ipsum');
+    });
+
+    it('should not return HTML', function() {
+      element.innerHTML = 'Lorem <b>ipsum</b> dolor sit amet';
+
+      expect(element.getText()).to.equal('Lorem ipsum dolor sit amet');
+    });
+
+    it('should return children text', function() {
+      var d1 = document.createElement('div');
+          d1.textContent = 'Child text node 1';
+      var d2 = document.createElement('div');
+          d2.textContent = 'Child text node 2';
+
+      element.appendChild(d1);
+      element.appendChild(document.createTextNode('Direct text node'));
+      element.appendChild(d2);
+
+      expect(element.getText()).to.equal('Child text node 1Direct text nodeChild text node 2');
+    });
+  });
+
+  describe('setText()', function() {
+    it('should set strings', function() {
+      element.textContent = 'Lorem ipsum';
+      element.setText('Dolor sit amet');
+
+      expect(element.textContent).to.equal('Dolor sit amet');
+    });
+
+    it('should set text nodes', function() {
+      element.textContent = 'Lorem ipsum';
+      element.setText(document.createTextNode('Dolor sit amet'));
+
+      expect(element.textContent).to.equal('Dolor sit amet');
+    });
+
+    it('should set HTML as text', function() {
+      element.textContent = 'Lorem ipsum';
+      element.setText('Dolor <b>sit</b> amet');
+
+      expect(element.textContent).to.equal('Dolor <b>sit</b> amet');
+    });
+  });
+
   describe('hide()', function() {
     it('should hide element', function() {
       element.hide();

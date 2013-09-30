@@ -246,16 +246,37 @@
       return this;
     },
 
+    /**
+     * Helper function to either execute a get or set command.
+     *
+     * @param {*} [value]
+     * @returns {String|Element}
+     */
     text: function text(value) {
-      return (typeOf(value) === 'null') ? this.getText() : this.setText(value);
+      return isDefined(value) ? this.setText(value) : this.getText();
     },
 
+    /**
+     * Return the text from the current element and all child elements.
+     *
+     * @returns {String}
+     */
     getText: function getText() {
-      return this.innerText;
+      return this.textContent;
     },
 
+    /**
+     * Set the inner content as text. Will convert strings to text nodes.
+     *
+     * @param {String} text
+     * @returns {Element}
+     */
     setText: function setText(text) {
-      this.innerText = text;
+      if (typeOf(text) !== 'text') {
+        text = document.createTextNode(text);
+      }
+
+      this.empty().appendChild(text);
 
       return this;
     },
@@ -779,7 +800,11 @@
     },
 
     empty: function() {
+      while (this.firstChild) {
+        this.removeChild(this.firstChild);
+      }
 
+      return this;
     }
 
   });
