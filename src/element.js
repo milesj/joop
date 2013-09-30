@@ -7,28 +7,14 @@
 (function() {
   'use strict';
 
-  // Possible vendor prefixes for props
-  var vendorPrefixes = ['Webkit', 'Moz', 'ms', 'O'],
-      vendorPrefixLookup = {};
-
-  // Props that shouldn't append "px"
-  var pixellessNumbers = {
-    columnCount: true,
-    fillOpacity: true,
-    fontWeight: true,
-    lineHeight: true,
-    opacity: true,
-    orphans: true,
-    widows: true,
-    zIndex: true,
-    zoom: true
-  };
-
   // DOM properties considered boolean only
   var booleans = 'checked|selected|async|autofocus|autoplay|controls|defer|disabled|hidden|ismap|loop|multiple|open|readonly|required|scoped';
 
   // Mapping of getter and setter hooks
   var Hooks = {
+
+    // Attributes
+    attr: {},
 
     // Properties
     prop: {
@@ -49,6 +35,11 @@
       padding: {
         get: function getPaddingStyle(key) {
           return this.getStyle(['padding-top', 'padding-right', 'padding-bottom', 'padding-left']);
+        }
+      },
+      opacity: {
+        get: function getOpacityStyle(key) {
+          return this.style.opacity || '1';
         }
       }
     }
@@ -105,89 +96,17 @@
   }
 
   /**
-   * Helper function for grabbing an elements computed styles.
-   *
-   * @param {Element} element
-   * @returns {*}
-   */
-  function getComputedStyle(element) {
-    return window.getComputedStyle(element, null);
-  }
-
-  /**
-   * Get the sum of multiple styles. This will cast each value to a number.
-   *
-   * @param {Element} element
-   * @param {Array} keys
-   * @returns {Number}
-   */
-  function getSumOfStyles(element, keys) {
-    var style = getComputedStyle(element),
-        value = 0;
-
-    for (var i = 0, l = keys.length; i < l; i++) {
-      value += style[keys[i]].toInt();
-    }
-
-    return value;
-  }
-
-  /**
-   * Convert dashed form to camelcase. Prepend vendor prefix if necessary.
-   * Example: background-color -> backgroundColor
-   *
-   * @param {Element} element
-   * @param {String} key
-   * @returns {String}
-   */
-  function convertCssProperty(element, key) {
-    if (key === 'float') {
-      return 'cssFloat';
-    }
-
-    var styles = element.style;
-
-    if (key.indexOf('-')) {
-      key = key.replace(/-([a-z0-9])/ig, function(value, letter) {
-        return letter.toUpperCase();
-      });
-    }
-
-    // Used cached lookup
-    if (key in styles) {
-      return key;
-    } else if (vendorPrefixLookup[key]) {
-      return vendorPrefixLookup[key];
-    }
-
-    // Prepend vendor prefix
-    var capKey = key.charAt(0).toUpperCase() + key.slice(1),
-        vendorKey;
-
-    for (var i = 0, p; p = vendorPrefixes[i]; i++) {
-      vendorKey = p + capKey;
-
-      if (vendorKey in styles) {
-        vendorPrefixLookup[key] = vendorKey;
-        return vendorKey;
-      }
-    }
-
-    return key;
-  }
-
-  /**
    * Handles the detection and execution of getter hooks.
    *
-   * @param {Object} hooks
+   * @param {Object} hook
    * @param {Element} self
    * @param {String} key
    * @param {*} value
    * @returns {*}
    */
-  function callGetHook(hooks, self, key, value) {
-    if (hooks[key] && hooks[key].get) {
-      return hooks[key].get.call(self, key);
+  function doGetHook(hook, self, key, value) {
+    if (hook && hook.get) {
+      return hook.get.call(self, key);
     }
 
     return value;
@@ -196,15 +115,20 @@
   /**
    * Handles the detection and execution of setter hooks.
    *
-   * @param {Object} hooks
+   * @param {Object} hook
    * @param {Element} self
    * @param {String} key
    * @param {*} value
+   * @param {*} original
    * @returns {*}
    */
-  function callSetHook(hooks, self, key, value) {
-    if (hooks[key] && hooks[key].set) {
-      value = hooks[key].set.call(self, key, value);
+  function doSetHook(hook, self, key, value, original) {
+    if (hook && hook.set) {
+      value = hook.set.call(self, key, value);
+    }
+
+    if (typeOf(value) === 'function') {
+      value = value.call(self, original);
     }
 
     return value;
@@ -255,11 +179,7 @@
      * @returns {Element}
      */
     setAttr: function setAttr(key, value) {
-      if (typeOf(value) === 'function') {
-        value = value.call(this, this.getAttr(key)); // current attribute as argument
-      }
-
-      this.setAttribute(key, value);
+      this.setAttribute(key, doSetHook(Hooks.attr[key], this, key, value, this.getAttr(key)));
 
       return this;
     }.setter(),
@@ -300,7 +220,7 @@
         return null;
       }
 
-      return callGetHook(Hooks.prop, this, key, this[key]);
+      return doGetHook(Hooks.prop[key], this, key, this[key]);
     }.getter(),
 
     /**
@@ -311,11 +231,7 @@
      * @returns {Element}
      */
     setProp: function setProp(key, value) {
-      if (typeOf(value) === 'function') {
-        value = value.call(this, this.getProp(key)); // current prop as argument
-      }
-
-      this[key] = callSetHook(Hooks.prop, this, key, value);
+      this[key] = doSetHook(Hooks.prop[key], this, key, value, this.getProp(key));
 
       return this;
     }.setter(),
@@ -376,48 +292,177 @@
       this.value = value;
 
       return this;
-    },
+    }
 
-    /*------------------------------------ Styles ------------------------------------*/
+  });
 
+  /*------------------------------------ Styles ------------------------------------*/
+
+  // Possible vendor prefixes for props
+  var vendorPrefixes = ['Moz', 'Webkit', 'ms', 'O'], // Moz needs to come first
+      vendorPrefixLookup = {};
+
+  // Props that shouldn't append "px"
+  // Credit to the jQuery team
+  var pixellessNumbers = {
+    columnCount: true,
+    fillOpacity: true,
+    fontWeight: true,
+    lineHeight: true,
+    opacity: true,
+    orphans: true,
+    widows: true,
+    zIndex: true,
+    zoom: true
+  };
+
+  /**
+   * Helper function for grabbing an elements computed styles.
+   *
+   * @param {Element} element
+   * @returns {*}
+   */
+  function getComputedStyle(element) {
+    return window.getComputedStyle(element, null);
+  }
+
+  /**
+   * Get the sum of multiple styles. This will cast each value to a number.
+   *
+   * @param {Element} element
+   * @param {Array} keys
+   * @returns {Number}
+   */
+  function getSumOfStyles(element, keys) {
+    var style = getComputedStyle(element),
+      value = 0;
+
+    for (var i = 0, l = keys.length; i < l; i++) {
+      value += style[keys[i]].toInt();
+    }
+
+    return value;
+  }
+
+  /**
+   * Convert dashed form to camel case.
+   * Example: background-color -> backgroundColor
+   *
+   * @param {String} key
+   * @returns {String}
+   */
+  function convertCssProperty(key) {
+    if (key === 'float') {
+      return 'cssFloat';
+    }
+
+    if (key.indexOf('-')) {
+      key = key.replace(/-([a-z0-9])/ig, function(value, letter) {
+        return letter.toUpperCase();
+      });
+    }
+
+    return key;
+  }
+
+  /**
+   * Apply a vendor prefix to certain CSS style properties.
+   * Determine which props require a prefix by checking the styles object.
+   *
+   * @param {Object} styles
+   * @param {String} key
+   * @returns {String}
+   */
+  function applyVendorPrefix(styles, key) {
+    if (styles[key]) {
+      return key;
+    } else if (vendorPrefixLookup[key]) {
+      return vendorPrefixLookup[key];
+    }
+
+    var capKey = key.charAt(0).toUpperCase() + key.slice(1),
+      vendorKey;
+
+    for (var i = 0, p; p = vendorPrefixes[i]; i++) {
+      vendorKey = p + capKey;
+
+      if (styles[vendorKey]) {
+        vendorPrefixLookup[key] = vendorKey;
+        return vendorKey;
+      }
+    }
+
+    return key;
+  }
+
+  Element.implement({
+
+    /**
+     * Universal getter, setter and remover for CSS styles.
+     *
+     * @param {String|Array|Object} key
+     * @param {*} [value]
+     * @returns {Element}
+     */
     css: function css(key, value) {
       return doGetOrSet(this, key, value, this.getStyle, this.setStyle, this.removeStyle);
     },
 
+    /**
+     * Get the value of a style. Apply a vendor prefix if necessary.
+     *
+     * @param {String} key
+     * @returns {String}
+     */
     getStyle: function getStyle(key) {
-      key = convertCssProperty(this, key);
+      var originKey = convertCssProperty(key),
+          vendorKey = applyVendorPrefix(this.style, originKey);
 
-      return callGetHook(Hooks.style, this, key, this.style[key] || null);
+      return doGetHook(Hooks.style[vendorKey] || Hooks.style[originKey], this, vendorKey, this.style[vendorKey] || null);
     }.getter(),
 
+    /**
+     * Set the style for an element. Apply a vendor prefix if necessary.
+     * Do not set styles for null or undefined values.
+     * Auto-apply "px" to numeric values.
+     *
+     * @param {String} key
+     * @param {*} value
+     * @returns {Element}
+     */
     setStyle: function setStyle(key, value) {
-      key = convertCssProperty(this, key);
+      var originKey = convertCssProperty(key),
+          vendorKey = applyVendorPrefix(this.style, originKey);
 
-      if (typeOf(value) === 'function') {
-        value = value.call(this, this.getStyle(key)); // current style as argument
-      }
-
-      value = callSetHook(Hooks.style, this, key, value);
+      value = doSetHook(Hooks.style[vendorKey] || Hooks.style[originKey], this, vendorKey, value, this.style[vendorKey] || null);
 
       var type = typeOf(value);
 
-      // Dont allow null or NaN values
+      // Don't allow null or NaN values
       if (type === 'null') {
         return this;
       }
 
       // Auto pixel numbers
-      if (type === 'number' && !pixellessNumbers[key]) {
+      if (type === 'number' && !pixellessNumbers[vendorKey]) {
         value += 'px';
       }
 
-      this.style[key] = value;
+      // TODO support relative += and -= values
+
+      this.style[vendorKey] = value;
 
       return this;
     }.setter(),
 
+    /**
+     * Remove an element style. Will not remove inherited CSS styles.
+     *
+     * @param {String|Array} key
+     * @returns {Element}
+     */
     removeStyle: function removeStyle(key) {
-      this.style[convertCssProperty(this, key)] = '';
+      this.style[applyVendorPrefix(this.style, convertCssProperty(key))] = '';
 
       return this;
     }.remover(),
@@ -464,7 +509,7 @@
      * Check for the existence of single or multiple classes.
      *
      * @param {String|Array} name
-     * @returns {Element}
+     * @returns {boolean}
      */
     hasClass: function hasClass(name) {
       if (typeOf(name) !== 'array') {

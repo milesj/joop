@@ -251,6 +251,33 @@ describe('Element', function() {
     });
   });
 
+  describe('css()', function() {
+    it('should get and set styles', function() {
+      element.css('display', 'block').css({
+        float: 'none',
+        position: 'static',
+        width: function(value) {
+          return 100 * 3;
+        }
+      });
+
+      expect(element.css('display')).to.equal('block');
+      expect(element.css(['float', 'position', 'width'])).to.deep.equal({
+        float: 'none',
+        position: 'static',
+        width: '300px'
+      });
+    });
+
+    it('should set and remove styles', function() {
+      element.css('float', 'left');
+      expect(element.css('float')).to.equal('left');
+
+      element.css('float', null);
+      expect(element.css('float')).to.equal(null);
+    });
+  });
+
   describe('getStyle()', function() {
     it('should return a style in any format', function() {
       element.style.border = '10px solid black';
@@ -301,6 +328,16 @@ describe('Element', function() {
 
       expect(element.getStyle('box-sizing')).to.equal('content-box');
     });
+
+    it('should always return a value for opacity', function() {
+      expect(element.getStyle('opacity')).to.equal('1');
+
+      element.style.opacity = 0;
+      expect(element.getStyle('opacity')).to.equal('0');
+
+      element.style.opacity = 0.3;
+      expect(element.getStyle('opacity')).to.equal('0.3');
+    });
   });
 
   describe('setStyle()', function() {
@@ -346,13 +383,57 @@ describe('Element', function() {
         'z-index': 6
       });
 
-      console.log(element.getStyle(['width', 'height', 'opacity', 'z-index']));
-
       expect(element.getStyle(['width', 'height', 'opacity', 'z-index'])).to.deep.equal({
         width: '125px',
         height: '250px',
         opacity: '0.6',
         'z-index': '6'
+      });
+    });
+
+    it('should resolve function values', function() {
+      element.setStyle('width', 125);
+
+      expect(element.getStyle('width')).to.equal('125px');
+
+      // Don't set empty returns
+      element.setStyle('width', function(value) {
+        return null;
+      });
+
+      expect(element.getStyle('width')).to.equal('125px');
+
+      element.setStyle('width', function(value) {
+        return value.toInt() * 2;
+      });
+
+      expect(element.getStyle('width')).to.equal('250px');
+    });
+  });
+
+  describe('removeStyle()', function() {
+    it('should remove a style', function() {
+      element.style.width = '100px';
+      element.removeStyle('width');
+
+      expect(element.getStyle('width')).to.equal(null);
+    });
+
+    it('should remove a vendor style', function() {
+      element.style.MozAnimationName = 'foobar';
+      element.removeStyle('animation-name');
+
+      expect(element.getStyle('animation-name')).to.equal(null);
+    });
+
+    it('should remove multiple styles', function() {
+      element.style.width = '100px';
+      element.style.height = '100px';
+      element.removeStyle(['width', 'height']);
+
+      expect(element.getStyle(['width', 'height'])).to.deep.equal({
+        width: null,
+        height: null
       });
     });
   });

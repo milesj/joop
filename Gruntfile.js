@@ -15,7 +15,10 @@ module.exports = function(grunt) {
       options: {
         globals: {
           console: true,
-          module: true
+          module: true,
+          typeOf: true,
+          instanceOf: true,
+          isDefined: true
         },
         browser: true,
         // enforcing

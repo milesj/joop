@@ -108,7 +108,7 @@
       }
 
       return data;
-    }
+    };
   };
 
   /**
@@ -155,7 +155,7 @@
       }
 
       return this;
-    }
+    };
   };
 
   /**
@@ -258,7 +258,7 @@
     /**
      * Convert a string to an integer.
      *
-     * @param {Number} base
+     * @param {Number} [base]
      * @returns {Number}
      */
     toInt: function(base) {
