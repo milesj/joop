@@ -302,6 +302,9 @@
   var vendorPrefixes = ['Moz', 'Webkit', 'ms', 'O'], // Moz needs to come first
       vendorPrefixLookup = {};
 
+  // Relative number regex pattern: http://stackoverflow.com/a/10256077
+  var regexRelNumbers = /^([+-])=([+-]?\d+(\.\d+)?)$/i;
+
   // Props that shouldn't append "px"
   // Credit to the jQuery team
   var pixellessNumbers = {
@@ -432,23 +435,35 @@
      */
     setStyle: function setStyle(key, value) {
       var originKey = convertCssProperty(key),
-          vendorKey = applyVendorPrefix(this.style, originKey);
+          vendorKey = applyVendorPrefix(this.style, originKey),
+          originalValue = this.getStyle(key);
 
-      value = doSetHook(Hooks.style[vendorKey] || Hooks.style[originKey], this, vendorKey, value, this.style[vendorKey] || null);
+      value = doSetHook(Hooks.style[vendorKey] || Hooks.style[originKey], this, vendorKey, value, originalValue);
 
-      var type = typeOf(value);
+      var type = typeOf(value),
+          match;
 
       // Don't allow null or NaN values
       if (type === 'null') {
         return this;
       }
 
+      // Apply relative values += and -=
+      if (type === 'string' && (match = regexRelNumbers.exec(value))) {
+        originalValue = originalValue ? originalValue.toFloat() : 0;
+        type = 'number';
+
+        if (match[1] === '+') {
+          value = originalValue + match[2].toFloat();
+        } else {
+          value = originalValue - match[2].toFloat();
+        }
+      }
+
       // Auto pixel numbers
       if (type === 'number' && !pixellessNumbers[vendorKey]) {
         value += 'px';
       }
-
-      // TODO support relative += and -= values
 
       this.style[vendorKey] = value;
 

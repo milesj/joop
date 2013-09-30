@@ -409,6 +409,22 @@ describe('Element', function() {
 
       expect(element.getStyle('width')).to.equal('250px');
     });
+
+    it('should apply relative values with += and -=', function() {
+      element.setStyle('width', '+=125');
+
+      expect(element.getStyle('width')).to.equal('125px');
+
+      element.setStyle('width', '+=250.50');
+
+      expect(element.getStyle('width')).to.equal('375.5px');
+
+      element.setStyle('width', '-=66.25');
+
+      expect(element.getStyle('width')).to.equal('309.25px');
+
+      console.log(element);
+    });
   });
 
   describe('removeStyle()', function() {
