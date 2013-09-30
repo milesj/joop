@@ -7,48 +7,7 @@
 (function() {
   'use strict';
 
-  // DOM properties considered boolean only
-  var booleans = 'checked|selected|async|autofocus|autoplay|controls|defer|disabled|hidden|ismap|loop|multiple|open|readonly|required|scoped';
-
-  // Mapping of getter and setter hooks
-  var Hooks = {
-
-    // Attributes
-    attr: {},
-
-    // Properties
-    prop: {
-      tag: {
-        get: function getTagProp(key) {
-          return (this.tagName || this.nodeName).toLowerCase();
-        }
-      }
-    },
-
-    // CSS styles
-    style: {
-      margin: {
-        get: function getMarginStyle(key) {
-          return this.getStyle(['margin-top', 'margin-right', 'margin-bottom', 'margin-left']);
-        }
-      },
-      padding: {
-        get: function getPaddingStyle(key) {
-          return this.getStyle(['padding-top', 'padding-right', 'padding-bottom', 'padding-left']);
-        }
-      },
-      opacity: {
-        get: function getOpacityStyle(key) {
-          return this.style.opacity || '1';
-        }
-      }
-    }
-  };
-
-  // Add setter hooks for boolean properties
-  booleans.split('|').forEach(function(bool) {
-    Hooks.prop[bool] = { set: setBoolHook };
-  });
+  var hooks = joop.hooks;
 
   /**
    * Universal function that handles the getting, setting and removing of data.
@@ -134,18 +93,6 @@
     return value;
   }
 
-  /**
-   * Helper function used to cast boolean properties to a boolean value.
-   * Example: prop('checked', 'checked') === true
-   *
-   * @param {String} key
-   * @param {*} value
-   * @returns {boolean}
-   */
-  function setBoolHook(key, value) {
-    return (typeOf(value) !== 'boolean') ? (key === value) : value;
-  }
-
   /*------------------------------------ Attributes ------------------------------------*/
 
   Element.implement({
@@ -179,7 +126,7 @@
      * @returns {Element}
      */
     setAttr: function setAttr(key, value) {
-      this.setAttribute(key, doSetHook(Hooks.attr[key], this, key, value, this.getAttr(key)));
+      this.setAttribute(key, doSetHook(hooks.attr[key], this, key, value, this.getAttr(key)));
 
       return this;
     }.setter(),
@@ -198,6 +145,33 @@
   });
 
   /*------------------------------------ Properties ------------------------------------*/
+
+  // Property hooks
+  hooks.prop.tag = {
+    get: function getTagProp(key) {
+      return (this.tagName || this.nodeName).toLowerCase();
+    }
+  };
+
+  // DOM properties considered boolean only
+  var booleans = 'checked|selected|async|autofocus|autoplay|controls|defer|disabled|hidden|ismap|loop|multiple|open|readonly|required|scoped';
+
+  // Add setter hooks for boolean properties
+  booleans.split('|').forEach(function(bool) {
+    hooks.prop[bool] = { set: setBoolProp };
+  });
+
+  /**
+   * Helper function used to cast boolean properties to a boolean value.
+   * Example: prop('checked', 'checked') === true
+   *
+   * @param {String} key
+   * @param {*} value
+   * @returns {boolean}
+   */
+  function setBoolProp(key, value) {
+    return (typeOf(value) !== 'boolean') ? (key === value) : value;
+  }
 
   Element.implement({
 
@@ -219,11 +193,11 @@
      * @returns {*}
      */
     getProp: function getProp(key) {
-      if (typeof this[key] === 'undefined' && !Hooks.prop[key]) {
+      if (typeof this[key] === 'undefined' && !hooks.prop[key]) {
         return null;
       }
 
-      return doGetHook(Hooks.prop[key], this, key, this[key]);
+      return doGetHook(hooks.prop[key], this, key, this[key]);
     }.getter(),
 
     /**
@@ -234,7 +208,7 @@
      * @returns {Element}
      */
     setProp: function setProp(key, value) {
-      this[key] = doSetHook(Hooks.prop[key], this, key, value, this.getProp(key));
+      this[key] = doSetHook(hooks.prop[key], this, key, value, this.getProp(key));
 
       return this;
     }.setter(),
@@ -340,6 +314,25 @@
   });
 
   /*------------------------------------ Styles ------------------------------------*/
+
+  // Style hooks
+  hooks.style.margin = {
+    get: function getMarginStyle(key) {
+      return this.getStyle(['margin-top', 'margin-right', 'margin-bottom', 'margin-left']);
+    }
+  };
+
+  hooks.style.padding = {
+    get: function getPaddingStyle(key) {
+      return this.getStyle(['padding-top', 'padding-right', 'padding-bottom', 'padding-left']);
+    }
+  };
+
+  hooks.style.opacity = {
+    get: function getOpacityStyle(key) {
+      return this.style.opacity || '1';
+    }
+  };
 
   // Possible vendor prefixes for props
   var vendorPrefixes = ['Moz', 'Webkit', 'ms', 'O'], // Moz needs to come first
@@ -464,7 +457,7 @@
       var originKey = convertCssProperty(key),
           vendorKey = applyVendorPrefix(this.style, originKey);
 
-      return doGetHook(Hooks.style[vendorKey] || Hooks.style[originKey], this, vendorKey, this.style[vendorKey] || null);
+      return doGetHook(hooks.style[vendorKey] || hooks.style[originKey], this, vendorKey, this.style[vendorKey] || null);
     }.getter(),
 
     /**
@@ -481,7 +474,7 @@
           vendorKey = applyVendorPrefix(this.style, originKey),
           originalValue = this.getStyle(key);
 
-      value = doSetHook(Hooks.style[vendorKey] || Hooks.style[originKey], this, vendorKey, value, originalValue);
+      value = doSetHook(hooks.style[vendorKey] || hooks.style[originKey], this, vendorKey, value, originalValue);
 
       var type = typeOf(value),
           match;

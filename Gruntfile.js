@@ -16,6 +16,7 @@ module.exports = function(grunt) {
         globals: {
           console: true,
           module: true,
+          joop: true,
           typeOf: true,
           instanceOf: true,
           isDefined: true
