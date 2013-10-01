@@ -103,7 +103,7 @@
      *
      * @param {String|Array|Object} key
      * @param {*} [value]
-     * @returns {Element}
+     * @returns {String|Element}
      */
     attr: function attr(key, value) {
       return doGetOrSet(this, key, value, this.getAttr, this.setAttr, this.removeAttr);
@@ -207,7 +207,7 @@
      *
      * @param {String|Array|Object} key
      * @param {*} [value]
-     * @returns {Element}
+     * @returns {String|Element}
      */
     prop: function prop(key, value) {
       return doGetOrSet(this, key, value, this.getProp, this.setProp, this.removeProp);
@@ -331,6 +331,35 @@
   /*------------------------------------ Form ------------------------------------*/
 
   hooks.val.checkbox = {
+  };
+
+  hooks.val.select = {
+    get: function getSelectVal(key) {
+      if (!this.multiple) {
+        return this.value;
+      }
+
+      var values = [],
+          index = this.selectedIndex,
+          optgroup,
+          opt;
+
+      for (var i = 0; opt = this.options[i]; i++) {
+        if ((opt.selected || i === index) && !opt.disabled) {
+
+          // Don't allow if optgroup is disabled
+          optgroup = opt.parentNode;
+
+          if (optgroup.getProp('tag') === 'optgroup' && optgroup.disabled) {
+            continue;
+          }
+
+          values.push(opt.value);
+        }
+      }
+
+      return values;
+    }
   };
 
   Element.implement({

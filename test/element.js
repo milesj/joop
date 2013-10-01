@@ -430,6 +430,112 @@ describe('Element', function() {
 
     it('should return select value (optgroup)', function() {
       var input = document.createElement('select');
+
+      var og1 = document.createElement('optgroup');
+          og1.setAttribute('label', 'DC');
+
+      var o1 = document.createElement('option');
+          o1.setAttribute('value', 'batman');
+          o1.textContent = 'Batman';
+
+      var o2 = document.createElement('option');
+          o2.setAttribute('value', 'superman');
+          o2.textContent = 'Superman';
+
+      og1.appendChild(o1);
+      og1.appendChild(o2);
+
+      var og2 = document.createElement('optgroup');
+          og2.setAttribute('label', 'Marvel');
+
+      var o3 = document.createElement('option');
+          o3.setAttribute('value', 'spiderman');
+          o3.textContent = 'Spiderman';
+
+      var o4 = document.createElement('option');
+          o4.setAttribute('value', 'ironman');
+          o4.textContent = 'Ironman';
+
+      og2.appendChild(o3);
+      og2.appendChild(o4);
+      input.appendChild(og1);
+      input.appendChild(og2);
+      element.appendChild(input);
+
+      expect(input.getVal()).to.equal('batman');
+
+      input.selectedIndex = 3;
+
+      expect(input.getVal()).to.equal('ironman');
+
+      input.selectedIndex = 1;
+
+      expect(input.getVal()).to.equal('superman');
+    });
+
+    it('should return select values (multiple) and not disabled', function() {
+      var input = document.createElement('select');
+          input.setAttribute('multiple', 'multiple');
+          input.innerHTML = '<option value="0">Zero</option><option value="1" selected>One</option><option value="2" selected>Two</option>';
+
+      element.appendChild(input);
+
+      expect(input.getVal()).to.deep.equal(['1', '2']);
+
+      input[0].selected = true;
+
+      expect(input.getVal()).to.deep.equal(['0', '1', '2']);
+
+      input[2].disabled = true;
+
+      expect(input.getVal()).to.deep.equal(['0', '1']);
+    });
+
+    it('should return select values (multiple optgroup) and not disabled', function() {
+      var input = document.createElement('select');
+          input.setAttribute('multiple', 'multiple');
+
+      var og1 = document.createElement('optgroup');
+          og1.setAttribute('label', 'DC');
+
+      var o1 = document.createElement('option');
+          o1.setAttribute('value', 'batman');
+          o1.textContent = 'Batman';
+
+      var o2 = document.createElement('option');
+          o2.setAttribute('value', 'superman');
+          o2.textContent = 'Superman';
+
+      og1.appendChild(o1);
+      og1.appendChild(o2);
+
+      var og2 = document.createElement('optgroup');
+          og2.setAttribute('label', 'Marvel');
+
+      var o3 = document.createElement('option');
+          o3.setAttribute('value', 'spiderman');
+          o3.textContent = 'Spiderman';
+
+      var o4 = document.createElement('option');
+          o4.setAttribute('value', 'ironman');
+          o4.textContent = 'Ironman';
+
+      og2.appendChild(o3);
+      og2.appendChild(o4);
+      input.appendChild(og1);
+      input.appendChild(og2);
+      element.appendChild(input);
+
+      expect(input.getVal()).to.deep.equal([]);
+
+      input[0].selected = true;
+      input[2].selected = true;
+
+      expect(input.getVal()).to.deep.equal(['batman', 'spiderman']);
+
+      og2.disabled = true;
+
+      expect(input.getVal()).to.deep.equal(['batman']);
     });
   });
 
