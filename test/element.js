@@ -277,14 +277,6 @@ describe('Element', function() {
   });
 
   describe('html()', function() {
-    it('should set and get HTML', function() {
-      element.html('foo <span><b>bar</b></span>');
-
-      expect(element.html()).to.equal('foo <span><b>bar</b></span>');
-    });
-  });
-
-  describe('getHtml()', function() {
     it('should return all children as text', function() {
       var d1 = document.createElement('div');
           d1.textContent = 'Child element 1';
@@ -295,59 +287,49 @@ describe('Element', function() {
       element.appendChild(document.createTextNode('Text node'));
       element.appendChild(d2);
 
-      expect(element.getHtml()).to.equal('<div>Child element 1</div>Text node<div>Child element 2</div>');
+      expect(element.html()).to.equal('<div>Child element 1</div>Text node<div>Child element 2</div>');
     });
-  });
 
-  describe('setHtml()', function() {
+    it('should set and get HTML', function() {
+      element.html('foo <span><b>bar</b></span>');
+
+      expect(element.html()).to.equal('foo <span><b>bar</b></span>');
+    });
+
     it('should set HTML strings', function() {
-      element.setHtml('Lorem <b>ipsum</b> dolor sit amet');
+      element.html('Lorem <b>ipsum</b> dolor sit amet');
 
       expect(element.innerHTML).to.equal('Lorem <b>ipsum</b> dolor sit amet');
     });
 
     it('should set HTML elements', function() {
       var d1 = document.createElement('div');
-          d1.textContent = 'Child element';
+      d1.textContent = 'Child element';
 
-      element.setHtml(d1);
+      element.html(d1);
 
       expect(element.innerHTML).to.equal('<div>Child element</div>');
     });
 
     it('should set an empty string', function() {
       element.innerHTML = 'Lorem <b>ipsum</b> dolor sit amet';
-      element.setHtml('');
+      element.html('');
 
       expect(element.innerHTML).to.equal('');
     });
   });
 
   describe('text()', function() {
-    it('should get text', function() {
-      element.textContent = 'Lorem ipsum';
-
-      expect(element.text()).to.equal('Lorem ipsum');
-    });
-
-    it('should set text', function() {
-      element.text('Lorem ipsum');
-
-      expect(element.text()).to.equal('Lorem ipsum');
-    });
-  });
-
-  describe('getText()', function() {
     it('should return text', function() {
       element.textContent = 'Lorem ipsum';
 
-      expect(element.getText()).to.equal('Lorem ipsum');
+      expect(element.text()).to.equal('Lorem ipsum');
     });
 
     it('should not return HTML', function() {
       element.innerHTML = 'Lorem <b>ipsum</b> dolor sit amet';
 
-      expect(element.getText()).to.equal('Lorem ipsum dolor sit amet');
+      expect(element.text()).to.equal('Lorem ipsum dolor sit amet');
     });
 
     it('should return children text', function() {
@@ -360,35 +342,39 @@ describe('Element', function() {
       element.appendChild(document.createTextNode('Direct text node'));
       element.appendChild(d2);
 
-      expect(element.getText()).to.equal('Child text node 1Direct text nodeChild text node 2');
+      expect(element.text()).to.equal('Child text node 1Direct text nodeChild text node 2');
     });
-  });
 
-  describe('setText()', function() {
+    it('should set text', function() {
+      element.text('Lorem ipsum');
+
+      expect(element.text()).to.equal('Lorem ipsum');
+    });
+
     it('should set strings', function() {
       element.textContent = 'Lorem ipsum';
-      element.setText('Dolor sit amet');
+      element.text('Dolor sit amet');
 
       expect(element.textContent).to.equal('Dolor sit amet');
     });
 
     it('should set text nodes', function() {
       element.textContent = 'Lorem ipsum';
-      element.setText(document.createTextNode('Dolor sit amet'));
+      element.text(document.createTextNode('Dolor sit amet'));
 
       expect(element.textContent).to.equal('Dolor sit amet');
     });
 
     it('should set HTML as text', function() {
       element.textContent = 'Lorem ipsum';
-      element.setText('Dolor <b>sit</b> amet');
+      element.text('Dolor <b>sit</b> amet');
 
       expect(element.textContent).to.equal('Dolor <b>sit</b> amet');
     });
 
     it('should set an empty string', function() {
       element.textContent = 'Lorem ipsum';
-      element.setText('');
+      element.text('');
 
       expect(element.textContent).to.equal('');
     });

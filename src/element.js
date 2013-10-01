@@ -7,7 +7,8 @@
 (function() {
   'use strict';
 
-  var hooks = joop.hooks;
+  var hooks = joop.hooks,
+      pseudos = joop.pseudos;
 
   /**
    * Universal function that handles the getting, setting and removing of data.
@@ -153,6 +154,32 @@
     }
   };
 
+  hooks.prop.textContent = {
+    set: function setTextProp(key, value) {
+      if (typeOf(value) !== 'text') {
+        value = document.createTextNode(value);
+      }
+
+      this.empty().appendChild(value);
+
+      return null;
+    }
+  };
+
+  hooks.prop.innerHTML = {
+    set: function setHtmlProp(key, value) {
+      this.empty();
+
+      if (typeOf(value) === 'element') {
+        this.appendChild(value);
+      } else {
+        this.innerHTML = value;
+      }
+
+      return null;
+    }
+  };
+
   // DOM properties considered boolean only
   var booleans = 'checked|selected|async|autofocus|autoplay|controls|defer|disabled|hidden|ismap|loop|multiple|open|readonly|required|scoped';
 
@@ -208,7 +235,13 @@
      * @returns {Element}
      */
     setProp: function setProp(key, value) {
-      this[key] = doSetHook(hooks.prop[key], this, key, value, this.getProp(key));
+      value = doSetHook(hooks.prop[key], this, key, value, this.getProp(key));
+
+      // Don't set nulls
+      // Allows for set hooks to by pass
+      if (value !== null) {
+        this[key] = value;
+      }
 
       return this;
     }.setter(),
@@ -234,74 +267,26 @@
 
     /**
      * Helper function to either get or set HTML.
+     * Get returns the element content and children as an HTML string.
+     * Set will write the contents as HTML and remove and current children.
      *
      * @param {*} [value]
      * @returns {String|Element}
      */
     html: function html(value) {
-      return isDefined(value) ? this.setHtml(value) : this.getHtml();
-    },
-
-    /**
-     * Returns the elements content and children as an HTML string.
-     *
-     * @returns {String}
-     */
-    getHtml: function getHtml() {
-      return this.innerHTML;
-    },
-
-    /**
-     * Set the contents with HTML. Will remove all previous elements.
-     *
-     * @param {String|Element} html
-     * @returns {Element}
-     */
-    setHtml: function setHtml(html) {
-      this.empty();
-
-      if (typeOf(html) === 'element') {
-        this.appendChild(html);
-      } else {
-        this.innerHTML = html;
-      }
-
-      return this;
+      return isDefined(value) ? this.setProp('innerHTML', value) : this.getProp('innerHTML');
     },
 
     /**
      * Helper function to either get or set text.
+     * Get returns the text from the current element and all child elements.
+     * Set will write the contents as text and convert values to text nodes.
      *
      * @param {*} [value]
      * @returns {String|Element}
      */
     text: function text(value) {
-      return isDefined(value) ? this.setText(value) : this.getText();
-    },
-
-    /**
-     * Return the text from the current element and all child elements.
-     *
-     * @returns {String}
-     */
-    getText: function getText() {
-      return this.textContent;
-    },
-
-    /**
-     * Set the inner content as text. Will convert strings to text nodes.
-     *
-     * @param {String|Text} text
-     * @returns {Element}
-     */
-    setText: function setText(text) {
-      if (typeOf(text) !== 'text') {
-        text = document.createTextNode(text);
-      }
-
-      this.empty().appendChild(text);
-
-      return this;
+      return isDefined(value) ? this.setProp('textContent', value) : this.getProp('textContent');
     },
 
     /**

@@ -21,8 +21,10 @@
       prop: {},
       style: {},
       val: {}
-    }
+    },
 
+    /** Pseudo comparators */
+    pseudos: {}
   };
 
   /** Referenced functions */
