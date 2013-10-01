@@ -19,7 +19,8 @@
     hooks: {
       attr: {},
       prop: {},
-      style: {}
+      style: {},
+      val: {}
     }
 
   };

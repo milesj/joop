@@ -8,6 +8,31 @@ describe('Element', function() {
   var expect = chai.expect,
       element;
 
+  var inputTypes = {
+    button: 'I are button',
+    //checkbox: 1,
+    //color: 'red',
+    //date: null,
+    //datetime: null,
+    email: 'test@example.com',
+    file: 'image.jpg',
+    hidden: 'Cant see meee',
+    image: 'image.jpg',
+    //month: null,
+    number: 1337,
+    password: 'Its a secret!',
+    //radio: null,
+    //range: null,
+    reset: 'I are reset',
+    search: 'A search term',
+    submit: 'And me submit',
+    //tel: null,
+    text: 'Basic text here'
+    //time: null,
+    //url: null,
+    //week: null
+  };
+
   beforeEach(function() {
     element = document.createElement('div');
     element.id = 'test-id';
@@ -366,6 +391,59 @@ describe('Element', function() {
       element.setText('');
 
       expect(element.textContent).to.equal('');
+    });
+  });
+
+  describe('getVal()', function() {
+    for (var key in inputTypes) {
+      it('should return input "' + key + '" value', function() {
+        var input = document.createElement('input');
+            input.setAttribute('type', key);
+            input.setAttribute('name', key);
+            input.value = inputTypes[key];
+
+        element.appendChild(input);
+
+        expect(input.getVal()).to.equal(inputTypes[key]);
+      });
+    }
+
+    /*it('should return input "checkbox" value (single)', function() {
+      var input = document.createElement('input');
+          input.setAttribute('type', 'checkbox');
+          input.setAttribute('name', 'checkbox');
+
+      expect(input.getVal()).to.equal(false);
+    });*/
+
+    it('should return textarea value', function() {
+      var input = document.createElement('textarea');
+          input.value = 'This is a big textarea';
+
+      element.appendChild(input);
+
+      expect(input.getVal()).to.equal('This is a big textarea');
+    });
+
+    it('should return select value', function() {
+      var input = document.createElement('select');
+          input.innerHTML = '<option value="0">Zero</option><option value="1" selected>One</option><option value="2">Two</option>';
+
+      element.appendChild(input);
+
+      expect(input.getVal()).to.equal('1');
+
+      input.selectedIndex = 0;
+
+      expect(input.getVal()).to.equal('0');
+
+      input.selectedIndex = 2;
+
+      expect(input.getVal()).to.equal('2');
+    });
+
+    it('should return select value (optgroup)', function() {
+      var input = document.createElement('select');
     });
   });
 

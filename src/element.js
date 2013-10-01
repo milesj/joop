@@ -78,7 +78,7 @@
    * @param {Element} self
    * @param {String} key
    * @param {*} value
-   * @param {*} original
+   * @param {*} [original] - The old value
    * @returns {*}
    */
   function doSetHook(hook, self, key, value, original) {
@@ -304,20 +304,6 @@
       return this;
     },
 
-    val: function val(value) {
-      return (typeOf(value) === 'null') ? this.getVal() : this.setVal(value);
-    },
-
-    getVal: function getVal() {
-      return this.value;
-    },
-
-    setVal: function setVal(value) {
-      this.value = value;
-
-      return this;
-    },
-
     /**
      * Hide an element by setting its display to none.
      *
@@ -357,6 +343,35 @@
 
   });
 
+  /*------------------------------------ Form ------------------------------------*/
+
+  hooks.val.checkbox = {
+  };
+
+  Element.implement({
+
+    val: function val(value) {
+      return isDefined(value) ? this.setVal(value) : this.getVal();
+    },
+
+    getVal: function getVal() {
+      var tag = this.prop('tag'),
+          type = (tag === 'input') ? this.getAttr('type') : tag;
+
+      return doGetHook(hooks.val[type], this, type, this.value);
+    },
+
+    setVal: function setVal(value) {
+      var tag = this.prop('tag'),
+          type = (tag === 'input') ? this.getAttr('type') : tag;
+
+      this.value = doSetHook(hooks.val[type], this, type, value, this.value);
+
+      return this;
+    }
+
+  });
+
   /*------------------------------------ Styles ------------------------------------*/
 
   // Style hooks
@@ -375,6 +390,9 @@
   hooks.style.opacity = {
     get: function getOpacityStyle(key) {
       return this.style.opacity || '1';
+    },
+    set: function setOpacityStyle(key, value) {
+      return parseFloat(value);
     }
   };
 
