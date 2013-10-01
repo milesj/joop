@@ -232,22 +232,45 @@
 
   Element.implement({
 
+    /**
+     * Helper function to either get or set HTML.
+     *
+     * @param {*} [value]
+     * @returns {String|Element}
+     */
     html: function html(value) {
-      return (typeOf(value) === 'null') ? this.getHtml() : this.setHtml(value);
+      return isDefined(value) ? this.setHtml(value) : this.getHtml();
     },
 
+    /**
+     * Returns the elements content and children as an HTML string.
+     *
+     * @returns {String}
+     */
     getHtml: function getHtml() {
       return this.innerHTML;
     },
 
+    /**
+     * Set the contents with HTML. Will remove all previous elements.
+     *
+     * @param {String|Element} html
+     * @returns {Element}
+     */
     setHtml: function setHtml(html) {
-      this.innerHTML = html;
+      this.empty();
+
+      if (typeOf(html) === 'element') {
+        this.appendChild(html);
+      } else {
+        this.innerHTML = html;
+      }
 
       return this;
     },
 
     /**
-     * Helper function to either execute a get or set command.
+     * Helper function to either get or set text.
      *
      * @param {*} [value]
      * @returns {String|Element}
@@ -268,7 +291,7 @@
     /**
      * Set the inner content as text. Will convert strings to text nodes.
      *
-     * @param {String} text
+     * @param {String|Text} text
      * @returns {Element}
      */
     setText: function setText(text) {
@@ -795,15 +818,24 @@
 
     },
 
-    remove: function() {
+    remove: Element.prototype.remove || function remove() {
+      this.parentNode().removeChild(this.release());
 
+      return this;
     },
 
-    empty: function() {
+    empty: function empty() {
       while (this.firstChild) {
+        //this.removeChild(this.firstChild.release());
         this.removeChild(this.firstChild);
       }
 
+      return this;
+    },
+
+    // http://javascript.crockford.com/memory/leak.html
+    // http://javascript.info/tutorial/memory-leaks
+    release: function release() {
       return this;
     }
 

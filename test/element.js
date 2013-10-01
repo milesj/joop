@@ -251,6 +251,53 @@ describe('Element', function() {
     });
   });
 
+  describe('html()', function() {
+    it('should set and get HTML', function() {
+      element.html('foo <span><b>bar</b></span>');
+
+      expect(element.html()).to.equal('foo <span><b>bar</b></span>');
+    });
+  });
+
+  describe('getHtml()', function() {
+    it('should return all children as text', function() {
+      var d1 = document.createElement('div');
+          d1.textContent = 'Child element 1';
+      var d2 = document.createElement('div');
+          d2.textContent = 'Child element 2';
+
+      element.appendChild(d1);
+      element.appendChild(document.createTextNode('Text node'));
+      element.appendChild(d2);
+
+      expect(element.getHtml()).to.equal('<div>Child element 1</div>Text node<div>Child element 2</div>');
+    });
+  });
+
+  describe('setHtml()', function() {
+    it('should set HTML strings', function() {
+      element.setHtml('Lorem <b>ipsum</b> dolor sit amet');
+
+      expect(element.innerHTML).to.equal('Lorem <b>ipsum</b> dolor sit amet');
+    });
+
+    it('should set HTML elements', function() {
+      var d1 = document.createElement('div');
+          d1.textContent = 'Child element';
+
+      element.setHtml(d1);
+
+      expect(element.innerHTML).to.equal('<div>Child element</div>');
+    });
+
+    it('should set an empty string', function() {
+      element.innerHTML = 'Lorem <b>ipsum</b> dolor sit amet';
+      element.setHtml('');
+
+      expect(element.innerHTML).to.equal('');
+    });
+  });
+
   describe('text()', function() {
     it('should get text', function() {
       element.textContent = 'Lorem ipsum';
@@ -312,6 +359,13 @@ describe('Element', function() {
       element.setText('Dolor <b>sit</b> amet');
 
       expect(element.textContent).to.equal('Dolor <b>sit</b> amet');
+    });
+
+    it('should set an empty string', function() {
+      element.textContent = 'Lorem ipsum';
+      element.setText('');
+
+      expect(element.textContent).to.equal('');
     });
   });
 
