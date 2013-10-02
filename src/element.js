@@ -7,8 +7,8 @@
 (function() {
   'use strict';
 
-  var hooks = joop.hooks,
-      pseudos = joop.pseudos;
+  var hooks = joop.hooks;
+      //pseudos = joop.pseudos;
 
   /**
    * Universal function that handles the getting, setting and removing of data.
